@@ -12,6 +12,10 @@ from threadpoolctl import threadpool_limits
 from amulator.training.data import DictionaryDataset
 
 
+def running_avg_loss(engine):
+    return -engine.state.metrics["running_avg_loss"]
+
+
 class ModelTrainer(ABC):
     def __init__(self, model, criterion, optimizer):
         self.model = model
@@ -59,51 +63,96 @@ class GPModelTrainer(ModelTrainer):
         return loss.item()
 
 
-
-        return y_pred, y
-
-    @classmethod
-    def load(cls, fname, model_cls, likelihood_cls, optimizer_cls, mll_cls):
-        trainer_info = torch.load(fname)
-        model = model[""]
-        return cls(
-            model=model,
-            likelihood=likelihood,
-            mll=mll,
-            optimizer=optimizer,
-        )
-
-
-
-def train_model(
-        # dataloader contains x, y, *criterion_vals
-        dataloader,
+def get_trainer_engine(
         model_trainer,
-        save_prefix=time.strftime("%H%M"),
-        save_dir=time.strftime("%Y%m%d"),
-        num_threads=None,
-        max_epochs=150,
-        save_every=100,
-        n_saved=10,
-        require_empty=True,
-        create_dir=True,
         patience=10,
-        log_filename=None,
+        **tqdm_kwargs
 ):
+    """Return trainer_engine based on model_trainer with NaN termination,
+    loss logging, early stopping and progress bar.
+
+    Parameters
+    ----------
+    model_trainer : GPModelTrainer
+        keeps track of model, loss and optimizer
+    patience : int
+        number of events to wait if no improvement and then stop the training
+
+    Returns
+    -------
+    trainer_engine : ignite.engine.Engine
+        Engine for model_trainer
+    """
     trainer_engine = Engine(model_trainer.train_step)
 
-    # terminate training on NaN value to prevent long loops
+    # terminate training on NaN value to prevent unnecessary loops
     trainer_engine.add_event_handler(Events.ITERATION_COMPLETED, TerminateOnNan())
 
     # calculate the running average of the loss function
     avg_output = RunningAverage(output_transform=lambda x: x)
     avg_output.attach(trainer_engine, "running_avg_loss")
 
-    def score_function(engine):
-        return -engine.state.metrics["running_avg_loss"]
-
-    stop = EarlyStopping(patience=patience, score_function=score_function, trainer=trainer_engine)
+    stop = EarlyStopping(patience=patience, score_function=running_avg_loss, trainer=trainer_engine)
     trainer_engine.add_event_handler(Events.COMPLETED, stop)
+
+    # add progress bar
+    pbar = ProgressBar(**tqdm_kwargs)
+    pbar.attach(
+        trainer_engine,
+        ["running_avg_loss"],
+        event_name=Events.EPOCH_COMPLETED,
+        closing_event_name=Events.COMPLETED,
+    )
+
+    return trainer_engine
+
+
+def train_model(
+        # dataloader contains x, y, *criterion_vals
+        dataloader,
+        model_trainer,
+        max_epochs=150,
+        save_prefix=time.strftime("%H%M"),
+        save_dir=time.strftime("%Y%m%d"),
+        save_every=100,
+        n_saved=10,
+        require_empty=False,
+        create_dir=True,
+        trainer_engine=None,
+        num_threads=None,
+):
+    """Train model_trainer on given dataloader.
+
+    Parameters
+    ----------
+    dataloader : torch.utils.data.DataLoader
+        loader for the data to be passed to model_trainer
+    model_trainer : GPModelTrainer
+        keeps track of model, loss and optimizer
+    max_epochs : int
+        maximum number of epochs to train
+    save_prefix : str [Default: %H%M of run start]
+        prefix for saved checkpoint
+    save_dir : str [Default: %Y%m%d of run start]
+        directory to save checkpoints to
+    n_saved : int
+        maximum number of checkpoints to keep
+    require_empty : bool
+        require save_dir to not contain '.pt' files
+    create_dir : bool
+        create save_dir if it does not exist
+    trainer_engine : Optional[ignite.engine.Engine]
+        engine without ModelCheckpoint handler with running_avg_loss metric
+    num_threads : Optional[int]
+        limit number of threads with threadpoolctl
+
+    Returns
+    -------
+    trainer_engine : ignite.engine.Engine
+        trained engine
+    """
+    if trainer_engine is None:
+        trainer_engine = get_trainer_engine(model_trainer=model_trainer)
 
     # add checkpoint saving
     handler = ModelCheckpoint(
@@ -113,7 +162,7 @@ def train_model(
         create_dir=create_dir,
         require_empty=require_empty,
         global_step_transform=global_step_from_engine(trainer_engine, Events.EPOCH_COMPLETED),
-        score_function=score_function,
+        score_function=running_avg_loss,
         score_name="avg_epoch_loss",
         include_self=True,
     )
@@ -121,27 +170,12 @@ def train_model(
         Events.EPOCH_COMPLETED(every=save_every),
         handler,
         {
+            "trainer": trainer_engine,
             "model": model_trainer.model,
             "likelihood": model_trainer.likelihood,
-            "mll": model_trainer.mll,
             "optimizer": model_trainer.optimizer,
         },
     )
-
-    # add progress bar
-    tqdm_kwargs = {"persist": False}
-    if log_filename is not None:
-        log_file = open(log_filename, "w")
-        tqdm_kwargs["file"] = log_file
-
-    pbar = ProgressBar(**tqdm_kwargs)
-    pbar.attach(
-        trainer_engine,
-        ["running_avg_loss"],
-        event_name=Events.EPOCH_COMPLETED,
-        closing_event_name=Events.COMPLETED,
-    )
-
     with threadpool_limits(limits=num_threads):
         trainer_engine.run(dataloader, max_epochs=max_epochs)
 
