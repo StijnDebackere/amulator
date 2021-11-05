@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 import time
 
 import gpytorch
@@ -11,8 +12,19 @@ from threadpoolctl import threadpool_limits
 from amulator.training.data import DictionaryDataset
 
 
+class ModelTrainer(ABC):
+    def __init__(self, model, criterion, optimizer):
+        self.model = model
+        self.criterion = criterion
+        self.optimizer = optimizer
+
+    @abstractmethod
+    def train_step(self, engine, batch):
+        raise NotImplementedError
+
+
 # https://discuss.pytorch.org/t/ignite-correct-way-of-using-the-library-how-to-pass-model-to-callable/74522/2
-class GPModelTrainer(object):
+class GPModelTrainer(ModelTrainer):
     def __init__(
             self,
             model,
@@ -22,9 +34,10 @@ class GPModelTrainer(object):
             *args,
             **kwargs
     ):
-        self.model = model
+        super().__init__(model=model, criterion=None, optimizer=optimizer)
+        # include likelihood to load model from checkpoint
         self.likelihood = likelihood
-        self.optimizer = optimizer
+        # GPModel objective is -mll
         self.mll = mll
         self.losses = []
 
@@ -32,6 +45,7 @@ class GPModelTrainer(object):
         self.model.train()
         self.optimizer.zero_grad()
 
+        # our GP model uses Dictionarydataset to allow extra kwargs to mll
         X = batch["X"]
         y = batch["y"]
         criterion_kwargs = {k: batch[k] for k in batch.keys() - {"X", "y"}}
@@ -44,13 +58,7 @@ class GPModelTrainer(object):
         self.losses.append(loss.item())
         return loss.item()
 
-    def predict_on_batch(self, engine, batch):
-        self.model.eval()
 
-        X = batch["X"]
-        y = batch["y"]
-        with torch.no_grad():
-            y_pred = self.model(X)
 
         return y_pred, y
 
