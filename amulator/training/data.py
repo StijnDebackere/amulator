@@ -1,3 +1,4 @@
+import torch
 from torch.utils.data import Dataset
 
 
@@ -19,3 +20,12 @@ class DictionaryDataset(Dataset):
 
     def __len__(self):
         return self.X.shape[0]
+
+
+def load_data(X, y, **extra):
+    dataset = DictionaryDataset(X, y, **extra)
+    return dataset
+
+
+def get_dataloader(dataset, batch_size, **kwargs):
+    return torch.utils.data.Dataloader(dataset, batch_size=batch_size, **kwargs)
