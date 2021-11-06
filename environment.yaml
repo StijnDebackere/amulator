@@ -1,0 +1,15 @@
+name: amulator
+channels:
+  - defaults
+  - conda-forge
+  - pytorch
+dependencies:
+  - dill
+  - gpytorch
+  - ignite
+  - numpy
+  - scikit-learn
+  - scipy
+  - threadpoolctl
+  - torch
+  - tqdm
