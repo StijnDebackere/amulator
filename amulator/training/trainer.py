@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
 import time
 
+import dill
 import gpytorch
 from ignite.engine import Engine, Events
 from ignite.metrics import Accuracy, Loss, RunningAverage
-from ignite.handlers import ModelCheckpoint, EarlyStopping, TerminateOnNan
+from ignite.handlers import ModelCheckpoint, Checkpoint, EarlyStopping, TerminateOnNan
 from ignite.contrib.handlers import ProgressBar, global_step_from_engine
 import torch
 from threadpoolctl import threadpool_limits
@@ -12,6 +13,7 @@ from threadpoolctl import threadpool_limits
 from amulator.training.data import DictionaryDataset
 
 
+# global metrics to use for Engine
 def running_avg_loss(engine):
     return -engine.state.metrics["running_avg_loss"]
 
@@ -155,6 +157,13 @@ def train_model(
         trainer_engine = get_trainer_engine(model_trainer=model_trainer)
 
     # add checkpoint saving
+    to_save = {
+        "trainer": trainer_engine,
+        "model": model_trainer.model,
+        "likelihood": model_trainer.likelihood,
+        "optimizer": model_trainer.optimizer,
+    }
+
     handler = ModelCheckpoint(
         save_dir,
         save_prefix,
@@ -167,16 +176,21 @@ def train_model(
         include_self=True,
     )
     trainer_engine.add_event_handler(
-        Events.EPOCH_COMPLETED(every=save_every),
+        Events.EPOCH_COMPLETED(every=save_every) | Events.COMPLETED,
         handler,
-        {
-            "trainer": trainer_engine,
-            "model": model_trainer.model,
-            "likelihood": model_trainer.likelihood,
-            "optimizer": model_trainer.optimizer,
-        },
+        to_save,
     )
+
     with threadpool_limits(limits=num_threads):
         trainer_engine.run(dataloader, max_epochs=max_epochs)
 
+    # save full model
+    torch.save(
+        {
+            "dataloader": dataloader,
+            "model_trainer": model_trainer,
+        },
+        f"{save_dir}/{save_prefix}_full_model_{max_epochs}.pt",
+        dill,
+    )
     return trainer_engine
