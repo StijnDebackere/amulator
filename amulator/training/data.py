@@ -28,4 +28,4 @@ def load_data(X, y, **extra):
 
 
 def get_dataloader(dataset, batch_size, **kwargs):
-    return torch.utils.data.Dataloader(dataset, batch_size=batch_size, **kwargs)
+    return torch.utils.data.DataLoader(dataset, batch_size=batch_size, **kwargs)
