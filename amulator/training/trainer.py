@@ -118,7 +118,7 @@ def train_model(
         save_suffix=None,
         save_dir=time.strftime("%Y%m%d"),
         save_every=100,
-        n_saved=10,
+        num_saved=10,
         require_empty=False,
         create_dir=True,
         trainer_engine=None,
@@ -140,7 +140,7 @@ def train_model(
         optional suffix to append to prefix
     save_dir : str [Default: %Y%m%d of run start]
         directory to save checkpoints to
-    n_saved : int
+    num_saved : int
         maximum number of checkpoints to keep
     require_empty : bool
         require save_dir to not contain '.pt' files
@@ -182,8 +182,8 @@ def train_model(
 
     handler = ModelCheckpoint(
         save_dir,
-        n_saved=n_saved,
         save_prefix_full,
+        n_saved=num_saved,
         create_dir=create_dir,
         require_empty=require_empty,
         global_step_transform=global_step_from_engine(trainer_engine, Events.EPOCH_COMPLETED),
