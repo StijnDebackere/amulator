@@ -115,6 +115,7 @@ def train_model(
         model_trainer,
         max_epochs=150,
         save_prefix=time.strftime("%H%M"),
+        save_suffix=None,
         save_dir=time.strftime("%Y%m%d"),
         save_every=100,
         n_saved=10,
@@ -135,6 +136,8 @@ def train_model(
         maximum number of epochs to train
     save_prefix : str [Default: %H%M of run start]
         prefix for saved checkpoint
+    save_suffix : Optional[str]
+        optional suffix to append to prefix
     save_dir : str [Default: %Y%m%d of run start]
         directory to save checkpoints to
     n_saved : int
@@ -152,6 +155,9 @@ def train_model(
     -------
     trainer_engine : ignite.engine.Engine
         trained engine
+
+    save checkpoints to
+    {save_dir}/{save_prefix}_{model_name}_{likelihood_name}_optim_{optimizer_name}_{save_suffix}
     """
     if trainer_engine is None:
         trainer_engine = get_trainer_engine(model_trainer=model_trainer)
@@ -163,11 +169,21 @@ def train_model(
         "likelihood": model_trainer.likelihood,
         "optimizer": model_trainer.optimizer,
     }
+    model_name = type(model_trainer.model).__name__
+    likelihood_name = type(model_trainer.likelihood).__name__
+    optimizer_name = type(model_trainer.optimizer).__name__
+    model_info = f"{model_name}_{likelihood_name}_optim_{optimizer_name}"
+
+    if save_suffix is None:
+        save_suffix = ""
+    else:
+        save_suffix = f"_{save_suffix}"
+    save_prefix_full = f"{save_prefix}_{model_info}{save_suffix}"
 
     handler = ModelCheckpoint(
         save_dir,
-        save_prefix,
         n_saved=n_saved,
+        save_prefix_full,
         create_dir=create_dir,
         require_empty=require_empty,
         global_step_transform=global_step_from_engine(trainer_engine, Events.EPOCH_COMPLETED),
@@ -190,7 +206,7 @@ def train_model(
             "dataloader": dataloader,
             "model_trainer": model_trainer,
         },
-        f"{save_dir}/{save_prefix}_full_model_{max_epochs}.pt",
+        f"{save_dir}/{save_prefix_full}_full_model_{max_epochs}.pt",
         dill,
     )
     return trainer_engine
