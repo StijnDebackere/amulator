@@ -201,12 +201,14 @@ def train_model(
         trainer_engine.run(dataloader, max_epochs=max_epochs)
 
     # save full model
-    torch.save(
-        {
-            "dataloader": dataloader,
-            "model_trainer": model_trainer,
-        },
-        f"{save_dir}/{save_prefix_full}_full_model_{max_epochs}.pt",
-        dill,
-    )
+    with open(f"{save_dir}/{save_prefix_full}_full_model_{max_epochs}.pt", "wb") as f:
+        dill.dump(
+            {
+                "dataloader": dataloader,
+                "model_trainer": model_trainer,
+                "trainer_engine": trainer_engine,
+            },
+            f
+        )
+
     return trainer_engine
