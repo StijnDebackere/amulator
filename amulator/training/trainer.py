@@ -154,8 +154,9 @@ def get_trainer_engine(
         save_dir,
         n_saved=num_saved,
         filename_prefix=f"{filename_prefix}_best",
+        score_function=running_avg_loss,
         score_name="avg_epoch_loss",
-        global_step_transform=global_step_from_engine(trainer_engine)
+        global_step_transform=global_step_from_engine(trainer_engine),
     )
     trainer_engine.add_event_handler(Events.COMPLETED, best_handler)
 
