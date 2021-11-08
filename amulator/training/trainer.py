@@ -12,8 +12,11 @@ from ignite.handlers import (
     ModelCheckpoint,
     TerminateOnNan,
 )
-from ignite.contrib.handlers import ProgressBar, global_step_from_engine
+from ignite.contrib.handlers import LRScheduler, ProgressBar, global_step_from_engine
 import torch
+from torch.optim.lr_scheduler import (
+    ExponentialLR,
+)
 from threadpoolctl import threadpool_limits
 
 from amulator.training.data import DictionaryDataset
@@ -80,7 +83,10 @@ def get_trainer_engine(
         require_empty=False,
         create_dir=True,
         patience=10,
-        **tqdm_kwargs
+        lr_scheduler=None,
+        lr_scheduler_kwargs=None,
+        save_history=True,
+        tqdm_kwargs=None,
 ):
     """Return trainer_engine based on model_trainer with NaN termination,
     loss logging, early stopping and progress bar.
@@ -122,6 +128,7 @@ def get_trainer_engine(
     trainer_engine.add_event_handler(Events.COMPLETED, stop)
 
     # add progress bar
+    tqdm_kwargs = {} if tqdm_kwargs is None else tqdm_kwargs
     pbar = ProgressBar(**tqdm_kwargs)
     pbar.attach(
         trainer_engine,
@@ -171,6 +178,12 @@ def get_trainer_engine(
     )
     trainer_engine.add_event_handler(Events.COMPLETED, best_handler)
 
+    if lr_scheduler is not None:
+        lr_scheduler_kwargs = {} if lr_scheduler_kwargs is None else lr_scheduler_kwargs
+        scheduler = lr_scheduler(optimizer=model_trainer.optimizer, **lr_scheduler_kwargs)
+        lr_handler = LRScheduler(scheduler, save_history=save_history)
+        trainer_engine.add_event_handler(Events.ITERATION_COMPLETED, lr_handler)
+
     return trainer_engine
 
 
@@ -179,8 +192,8 @@ def train_model(
         dataloader,
         model_trainer,
         max_epochs=150,
-        save_dir=time.strftime("%Y%m%d"),
-        save_prefix=time.strftime("%H%M"),
+        save_dir=time.strftime("%Y_%m_%d_%H_%M_%S"),
+        save_prefix=None,
         save_suffix=None,
         filename_prefix=None,
         save_every=100,
@@ -190,6 +203,9 @@ def train_model(
         create_dir=True,
         trainer_engine=None,
         num_threads=None,
+        lr_scheduler=None,
+        lr_scheduler_kwargs=None,
+        save_history=True,
 ):
     """Train model_trainer on given dataloader.
 
@@ -201,9 +217,9 @@ def train_model(
         keeps track of model, loss and optimizer
     max_epochs : int
         maximum number of epochs to train
-    save_dir : str [Default: %Y%m%d of run start]
+    save_dir : str [Default: %Y_%m_%d_%H_%M_%S of run start]
         directory to save checkpoints to
-    save_prefix : str [Default: %H%M of run start]
+    save_prefix : Optional[str] [Default: None]
         prefix for saved checkpoint
     save_suffix : Optional[str]
         optional suffix to append to prefix
@@ -223,6 +239,12 @@ def train_model(
         engine without ModelCheckpoint handler with running_avg_loss metric
     num_threads : Optional[int]
         limit number of threads with threadpoolctl
+    lr_scheduler : Optional[torch.optim.lr_scheduler._LRScheduler]
+        schedule for learning rate updates
+    lr_scheduler_kwargs : dict
+        kwargs for lr_scheduler
+    save_history : Optional[bool]
+        save lr param history
 
     Returns
     -------
@@ -237,11 +259,16 @@ def train_model(
             save_suffix = ""
         else:
             save_suffix = f"_{save_suffix}"
+        if save_prefix is None:
+            save_prefix = ""
+        else:
+            save_prefix = f"{save_prefix}_"
+
         model_name = type(model_trainer.model).__name__
         likelihood_name = type(model_trainer.likelihood).__name__
         optimizer_name = type(model_trainer.optimizer).__name__
         model_info = f"{model_name}_{likelihood_name}_optim_{optimizer_name}"
-        filename_prefix = f"{save_prefix}_{model_info}{save_suffix}"
+        filename_prefix = f"{save_prefix}{model_info}{save_suffix}"
 
     if trainer_engine is None:
         trainer_engine = get_trainer_engine(
@@ -253,6 +280,9 @@ def train_model(
             require_empty=require_empty,
             create_dir=create_dir,
             patience=patience,
+            lr_scheduler=lr_scheduler,
+            lr_scheduler_kwargs=lr_scheduler_kwargs,
+            save_history=save_history,
         )
 
     with threadpool_limits(limits=num_threads):
