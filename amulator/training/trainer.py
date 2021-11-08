@@ -179,9 +179,10 @@ def train_model(
         dataloader,
         model_trainer,
         max_epochs=150,
+        save_dir=time.strftime("%Y%m%d"),
         save_prefix=time.strftime("%H%M"),
         save_suffix=None,
-        save_dir=time.strftime("%Y%m%d"),
+        filename_prefix=None,
         save_every=100,
         num_saved=10,
         patience=10,
@@ -200,12 +201,14 @@ def train_model(
         keeps track of model, loss and optimizer
     max_epochs : int
         maximum number of epochs to train
+    save_dir : str [Default: %Y%m%d of run start]
+        directory to save checkpoints to
     save_prefix : str [Default: %H%M of run start]
         prefix for saved checkpoint
     save_suffix : Optional[str]
         optional suffix to append to prefix
-    save_dir : str [Default: %Y%m%d of run start]
-        directory to save checkpoints to
+    filename_prefix : Optional[str]
+        if given, determines full filename prefix, only appends checkpoint info
     save_every : int
         number of training intervals to save checkpoints after
     num_saved : int
@@ -229,15 +232,16 @@ def train_model(
     save checkpoints to
     {save_dir}/{save_prefix}_{model_name}_{likelihood_name}_optim_{optimizer_name}_{save_suffix}
     """
-    if save_suffix is None:
-        save_suffix = ""
-    else:
-        save_suffix = f"_{save_suffix}"
-    model_name = type(model_trainer.model).__name__
-    likelihood_name = type(model_trainer.likelihood).__name__
-    optimizer_name = type(model_trainer.optimizer).__name__
-    model_info = f"{model_name}_{likelihood_name}_optim_{optimizer_name}"
-    filename_prefix = f"{save_prefix}_{model_info}{save_suffix}"
+    if filename_prefix is None:
+        if save_suffix is None:
+            save_suffix = ""
+        else:
+            save_suffix = f"_{save_suffix}"
+        model_name = type(model_trainer.model).__name__
+        likelihood_name = type(model_trainer.likelihood).__name__
+        optimizer_name = type(model_trainer.optimizer).__name__
+        model_info = f"{model_name}_{likelihood_name}_optim_{optimizer_name}"
+        filename_prefix = f"{save_prefix}_{model_info}{save_suffix}"
 
     if trainer_engine is None:
         trainer_engine = get_trainer_engine(
