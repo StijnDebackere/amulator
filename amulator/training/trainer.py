@@ -131,10 +131,6 @@ def get_trainer_engine(
         "likelihood": model_trainer.likelihood,
         "optimizer": model_trainer.optimizer,
     }
-    model_name = type(model_trainer.model).__name__
-    likelihood_name = type(model_trainer.likelihood).__name__
-    optimizer_name = type(model_trainer.optimizer).__name__
-    model_info = f"{model_name}_{likelihood_name}_optim_{optimizer_name}"
 
     handler = ModelCheckpoint(
         save_dir,
@@ -225,6 +221,10 @@ def train_model(
         save_suffix = ""
     else:
         save_suffix = f"_{save_suffix}"
+    model_name = type(model_trainer.model).__name__
+    likelihood_name = type(model_trainer.likelihood).__name__
+    optimizer_name = type(model_trainer.optimizer).__name__
+    model_info = f"{model_name}_{likelihood_name}_optim_{optimizer_name}"
     filename_prefix = f"{save_prefix}_{model_info}{save_suffix}"
 
     if trainer_engine is None:
