@@ -67,6 +67,12 @@ class GPModelTrainer(ModelTrainer):
 
 def get_trainer_engine(
         model_trainer,
+        filename_prefix,
+        save_dir,
+        save_every=10,
+        num_saved=10,
+        require_empty=False,
+        create_dir=True,
         patience=10,
         **tqdm_kwargs
 ):
@@ -77,6 +83,18 @@ def get_trainer_engine(
     ----------
     model_trainer : GPModelTrainer
         keeps track of model, loss and optimizer
+    filename_prefix : str
+        prefix for saved checkpoint
+    save_dir : str [Default: %Y%m%d of run start]
+        directory to save checkpoints to
+    save_every : int
+        number of training intervals to save checkpoints after
+    num_saved : int
+        maximum number of checkpoints to keep
+    require_empty : bool
+        require save_dir to not contain '.pt' files
+    create_dir : bool
+        create save_dir if it does not exist
     patience : int
         number of events to wait if no improvement and then stop the training
 
@@ -106,6 +124,45 @@ def get_trainer_engine(
         closing_event_name=Events.COMPLETED,
     )
 
+    # add checkpoint saving
+    to_save = {
+        "trainer": trainer_engine,
+        "model": model_trainer.model,
+        "likelihood": model_trainer.likelihood,
+        "optimizer": model_trainer.optimizer,
+    }
+    model_name = type(model_trainer.model).__name__
+    likelihood_name = type(model_trainer.likelihood).__name__
+    optimizer_name = type(model_trainer.optimizer).__name__
+    model_info = f"{model_name}_{likelihood_name}_optim_{optimizer_name}"
+
+    handler = ModelCheckpoint(
+        save_dir,
+        filename_prefix,
+        n_saved=num_saved,
+        create_dir=create_dir,
+        require_empty=require_empty,
+        global_step_transform=global_step_from_engine(trainer_engine, Events.EPOCH_COMPLETED),
+        score_function=running_avg_loss,
+        score_name="avg_epoch_loss",
+        include_self=True,
+    )
+    trainer_engine.add_event_handler(
+        Events.EPOCH_COMPLETED(every=save_every) | Events.COMPLETED,
+        handler,
+        to_save,
+    )
+
+    best_handler = Checkpoint(
+        to_save,
+        save_dir,
+        n_saved=num_saved,
+        filename_prefix=f"{filename_prefix}_best",
+        score_name="avg_epoch_loss",
+        global_step_transform=global_step_from_engine(trainer_engine)
+    )
+    trainer_engine.add_event_handler(Events.COMPLETED, best_handler)
+
     return trainer_engine
 
 
@@ -119,6 +176,7 @@ def train_model(
         save_dir=time.strftime("%Y%m%d"),
         save_every=100,
         num_saved=10,
+        patience=10,
         require_empty=False,
         create_dir=True,
         trainer_engine=None,
@@ -140,8 +198,12 @@ def train_model(
         optional suffix to append to prefix
     save_dir : str [Default: %Y%m%d of run start]
         directory to save checkpoints to
+    save_every : int
+        number of training intervals to save checkpoints after
     num_saved : int
         maximum number of checkpoints to keep
+    patience : int
+        number of events to wait if no improvement and then stop the training
     require_empty : bool
         require save_dir to not contain '.pt' files
     create_dir : bool
@@ -159,49 +221,29 @@ def train_model(
     save checkpoints to
     {save_dir}/{save_prefix}_{model_name}_{likelihood_name}_optim_{optimizer_name}_{save_suffix}
     """
-    if trainer_engine is None:
-        trainer_engine = get_trainer_engine(model_trainer=model_trainer)
-
-    # add checkpoint saving
-    to_save = {
-        "trainer": trainer_engine,
-        "model": model_trainer.model,
-        "likelihood": model_trainer.likelihood,
-        "optimizer": model_trainer.optimizer,
-    }
-    model_name = type(model_trainer.model).__name__
-    likelihood_name = type(model_trainer.likelihood).__name__
-    optimizer_name = type(model_trainer.optimizer).__name__
-    model_info = f"{model_name}_{likelihood_name}_optim_{optimizer_name}"
-
     if save_suffix is None:
         save_suffix = ""
     else:
         save_suffix = f"_{save_suffix}"
-    save_prefix_full = f"{save_prefix}_{model_info}{save_suffix}"
+    filename_prefix = f"{save_prefix}_{model_info}{save_suffix}"
 
-    handler = ModelCheckpoint(
-        save_dir,
-        save_prefix_full,
-        n_saved=num_saved,
-        create_dir=create_dir,
-        require_empty=require_empty,
-        global_step_transform=global_step_from_engine(trainer_engine, Events.EPOCH_COMPLETED),
-        score_function=running_avg_loss,
-        score_name="avg_epoch_loss",
-        include_self=True,
-    )
-    trainer_engine.add_event_handler(
-        Events.EPOCH_COMPLETED(every=save_every) | Events.COMPLETED,
-        handler,
-        to_save,
-    )
+    if trainer_engine is None:
+        trainer_engine = get_trainer_engine(
+            model_trainer=model_trainer,
+            filename_prefix=filename_prefix,
+            save_dir=save_dir,
+            save_every=save_every,
+            num_saved=num_saved,
+            require_empty=require_empty,
+            create_dir=create_dir,
+            patience=patience,
+        )
 
     with threadpool_limits(limits=num_threads):
         trainer_engine.run(dataloader, max_epochs=max_epochs)
 
     # save full model
-    with open(f"{save_dir}/{save_prefix_full}_full_model_{max_epochs}.pt", "wb") as f:
+    with open(f"{save_dir}/{filename_prefix}_full_model_{max_epochs}.pt", "wb") as f:
         dill.dump(
             {
                 "dataloader": dataloader,
