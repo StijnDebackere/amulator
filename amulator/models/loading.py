@@ -22,6 +22,7 @@ def read_super_poisson_gp_model_trainer(
     likelihood = SuperPoissonLikelihood()
     likelihood.load_state_dict(checkpoint_info["likelihood"])
     mll = VariationalELBO(likelihood, model, num_data=len(dataloader.dataset))
+    optimizer = optimizer(model.parameters())
     optimizer.load_state_dict(checkpoint_info["optimizer"])
 
     return GPModelTrainer(
