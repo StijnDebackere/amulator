@@ -5,7 +5,13 @@ import dill
 import gpytorch
 from ignite.engine import Engine, Events
 from ignite.metrics import Accuracy, Loss, RunningAverage
-from ignite.handlers import ModelCheckpoint, Checkpoint, EarlyStopping, TerminateOnNan
+from ignite.handlers import (
+    Checkpoint,
+    DiskSaver,
+    EarlyStopping,
+    ModelCheckpoint,
+    TerminateOnNan,
+)
 from ignite.contrib.handlers import ProgressBar, global_step_from_engine
 import torch
 from threadpoolctl import threadpool_limits
@@ -126,7 +132,8 @@ def get_trainer_engine(
 
     # add checkpoint saving
     to_save = {
-        "trainer": trainer_engine,
+        # # trainer saves some state that cannot be loaded with torch.load?
+        # "trainer": trainer_engine,
         "model": model_trainer.model,
         "likelihood": model_trainer.likelihood,
         "optimizer": model_trainer.optimizer,
@@ -151,7 +158,11 @@ def get_trainer_engine(
 
     best_handler = Checkpoint(
         to_save,
-        save_dir,
+        DiskSaver(
+            save_dir,
+            create_dir=create_dir,
+            require_empty=require_empty,
+        ),
         n_saved=num_saved,
         filename_prefix=f"{filename_prefix}_best",
         score_function=running_avg_loss,
