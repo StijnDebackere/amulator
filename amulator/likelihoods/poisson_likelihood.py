@@ -7,11 +7,11 @@ class PoissonLikelihood(_OneDimensionalLikelihood):
     r"""A Poisson likelihood/noise model for GP regression for
     Poisson-like data.
 
-    Model predicts :math:`\log_{10} N` and data is :math:`N`.
+    Data follows Poisson distribution with :math:`rate`.
 
     """
-    def _get_kwargs(self, log10_function_samples, **kwargs):
-        function_samples = 10 ** log10_function_samples
+    def _get_kwargs(self, function_samples, **kwargs):
+        function_samples = 10 ** function_samples
 
         # poisson rate is set by function_samples
         rate = function_samples
@@ -19,22 +19,21 @@ class PoissonLikelihood(_OneDimensionalLikelihood):
             "rate": rate,
         }
 
-    def forward(self, log10_function_samples, **kwargs):
-        poisson_kwargs = self._get_kwargs(log10_function_samples, **kwargs)
+    def forward(self, function_samples, **kwargs):
+        poisson_kwargs = self._get_kwargs(function_samples, **kwargs)
         return base_distributions.Poisson(**poisson_kwargs)
 
-    def log_marginal(self, observations, log10_function_dist, *args, **kwargs):
-        marginal = self.marginal(log10_function_dist, *args, **kwargs)
+    def log_marginal(self, observations, function_dist, *args, **kwargs):
+        marginal = self.marginal(function_dist, *args, **kwargs)
         return marginal.log_prob(observations.to(torch.int))
 
-    def marginal(self, log10_function_dist, **kwargs):
-        poisson_kwargs = self._get_kwargs(log10_function_dist.mean, **kwargs)
+    def marginal(self, function_dist, **kwargs):
+        poisson_kwargs = self._get_kwargs(function_dist.mean, **kwargs)
         return base_distributions.Poisson(**poisson_kwargs)
 
-    def expected_log_prob(self, observations, log10_function_dist, *args, **kwargs):
-        print(f"{observations=}")
-        prob_lambda = lambda log10_function_samples: self.forward(
-            log10_function_samples, *args, **kwargs
+    def expected_log_prob(self, observations, function_dist, *args, **kwargs):
+        prob_lambda = lambda function_samples: self.forward(
+            function_samples, *args, **kwargs
         ).log_prob(observations.to(torch.int))
-        log_prob = self.quadrature(prob_lambda, log10_function_dist)
+        log_prob = self.quadrature(prob_lambda, function_dist)
         return log_prob

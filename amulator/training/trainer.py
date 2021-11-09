@@ -63,9 +63,10 @@ class GPModelTrainer(ModelTrainer):
         # our GP model uses Dictionarydataset to allow extra kwargs to mll
         X = batch["X"]
         y = batch["y"]
-        criterion_kwargs = {k: batch[k] for k in batch.keys() - {"X", "y"}}
+        log10_y_mean = batch["log10_y_mean"]
+        criterion_kwargs = {k: batch[k] for k in batch.keys() - {"X", "y", "log10_y_mean"}}
 
-        y_pred = self.model(X)
+        y_pred = 10 ** (self.model(X) + log10_y_mean)
         # criterion is given by marginal likelihood => make negative
         loss = -self.mll(y_pred, y, **criterion_kwargs)
         loss.backward()
