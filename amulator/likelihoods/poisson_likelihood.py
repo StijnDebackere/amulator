@@ -11,13 +11,8 @@ class PoissonLikelihood(_OneDimensionalLikelihood):
 
     """
     def _get_kwargs(self, function_samples, **kwargs):
-        function_samples = 10 ** function_samples
-
         # poisson rate is set by function_samples
-        rate = function_samples
-        return {
-            "rate": rate,
-        }
+        return {"rate": function_samples}
 
     def forward(self, function_samples, **kwargs):
         poisson_kwargs = self._get_kwargs(function_samples, **kwargs)
