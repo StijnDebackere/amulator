@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import time
+import traceback
 
 import dill
 import gpytorch
@@ -375,14 +376,18 @@ def train_model(
 
     # save full model
     with open(f"{save_dir}/{filename_prefix}_full_model_{max_epochs}.pt", "wb") as f:
-        dill.dump(
-            {
-                "dataloader": train_loader,
-                "model_trainer": model_trainer,
-                "trainer_engine": trainer_engine,
-            },
-            f,
-        )
+        try:
+            dill.dump(
+                {
+                    "dataloader": train_loader,
+                    "model_trainer": model_trainer,
+                    "trainer_engine": trainer_engine,
+                },
+                f,
+            )
+        except dill.PicklingError as e:
+            print("Full model could not be saved!")
+            print(traceback.format_exc())
 
     if eval_loader is None:
         return trainer_engine
