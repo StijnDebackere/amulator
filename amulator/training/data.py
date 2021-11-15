@@ -13,8 +13,9 @@ class DictionaryDataset(Dataset):
     def __getitem__(self, index):
         X = self.X[index]
         y = self.y[index]
+        # only extract extra arguments that match shape of X, y
         extra = {
-            kw: val[index] for kw, val in self.extra.items()
+            kw: val for kw, val in self.extra.items() if val.shape[0] == self.X.shape[0]
         }
         return {'X': X, 'y': y, **extra}
 
