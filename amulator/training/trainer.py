@@ -27,8 +27,8 @@ def running_avg_loss(engine):
     return -engine.state.metrics["running_avg_loss"]
 
 
-def running_avg_mll(engine):
-    return engine.state.metrics["running_avg_mll"]
+def mll(engine):
+    return engine.state.metrics["mll"]
 
 
 class ModelTrainer(ABC):
@@ -90,6 +90,7 @@ class GPModelTrainer(ModelTrainer):
             y_pred = self.model(X)
             mll = self.mll(y_pred, y, **criterion_kwargs)
             self.eval_losses.append(mll.item())
+            engine.state.metrics["mll"] = mll.item()
 
         return mll.item()
 
@@ -223,36 +224,32 @@ def get_evaluator_engine(
         Engine for model_trainer performance evaluation
     """
     evaluator_engine = Engine(model_trainer.eval_mll)
-    # src=None: use output of evaluator engine as input to running_average
-    # output_transform:
-    loss_metric = RunningAverage(
-        src=None,
-        output_transform=lambda output: output,
-    )
-    loss_metric.attach(evaluator_engine, "running_avg_mll")
-
     to_save = {
         "model": model_trainer.model,
     }
 
-    best_handler = Checkpoint(
-        to_save,
-        DiskSaver(
-            save_dir,
-            create_dir=create_dir,
-            require_empty=require_empty,
-        ),
+    best_handler = ModelCheckpoint(
+        save_dir,
         n_saved=num_saved,
+        create_dir=create_dir,
+        require_empty=require_empty,
         filename_prefix=f"{filename_prefix}_best",
-        score_name="running_avg_mll",
-        global_step_transform=global_step_from_engine(evaluator_engine),
+        score_function=mll
+        score_name="val_mll",
+        global_step_transform=global_step_from_engine(trainer_engine),
     )
-    evaluator_engine.add_event_handler(Events.COMPLETED, best_handler)
+    evaluator_engine.add_event_handler(Events.COMPLETED, best_handler, to_save)
 
     if patience is not None:
         # add early stopping based on evaluator performance
-        stop = EarlyStopping(patience=patience, score_function=running_avg_mll, trainer=trainer_engine)
+        stop = EarlyStopping(patience=patience, score_function=mll, trainer=trainer_engine)
         evaluator_engine.add_event_handler(Events.COMPLETED, stop)
+
+    @evaluator_engine.on(Events.STARTED)
+    def init_metrics(_):
+        evaluator_engine.state.metrics = {
+            "mll": None,
+        }
 
     return evaluator_engine
 
@@ -384,7 +381,7 @@ def train_model(
                 "model_trainer": model_trainer,
                 "trainer_engine": trainer_engine,
             },
-            f
+            f,
         )
 
     if eval_loader is None:
