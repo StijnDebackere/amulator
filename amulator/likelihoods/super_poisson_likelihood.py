@@ -5,11 +5,11 @@ import torch
 
 class SuperPoissonLikelihood(_OneDimensionalLikelihood):
     r"""A NegativeBinomial likelihood/noise model for GP regression for
-    Poisson-like data with possible supper-Poisson errors.
+    Poisson-like data with possible super-Poisson errors.
 
     Model predicts :math:`\log_{10} f - \mathbb{E} \log_{10} f` and
     data is :math:`f` following a NegativeBinomial distribution with
-    mean :math:`f` and variance :math:`\alpha f`, where :math:`\alpha`
+    mean :math:`f` and variance :math:`\alpha f`, where :math:`\alpha > 1`
     is the super_poisson_ratio.
 
     """
@@ -26,7 +26,6 @@ class SuperPoissonLikelihood(_OneDimensionalLikelihood):
             raise ValueError("super_poisson_ratio contains NaNs and/or values < 1.")
 
         log10_function_mean = kwargs["log10_function_mean"]
-
         function_samples = 10 ** (log10_function_ratio_samples + log10_function_mean)
 
         # poisson noise is set by function_samples
