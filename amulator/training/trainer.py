@@ -27,6 +27,10 @@ def running_avg_loss(engine):
     return -engine.state.metrics["running_avg_loss"]
 
 
+def running_avg_mll(engine):
+    return engine.state.metrics["running_avg_mll"]
+
+
 class ModelTrainer(ABC):
     def __init__(self, model, criterion, optimizer):
         self.model = model
@@ -55,6 +59,7 @@ class GPModelTrainer(ModelTrainer):
         # GPModel objective is -mll
         self.mll = mll
         self.losses = []
+        self.eval_losses = []
 
     def train_step(self, engine, batch):
         self.model.train()
@@ -73,6 +78,21 @@ class GPModelTrainer(ModelTrainer):
         self.losses.append(loss.item())
         return loss.item()
 
+    def eval_mll(self, engine, batch):
+        self.model.eval()
+
+        # our GP model uses Dictionarydataset to allow extra kwargs to mll
+        X = batch["X"]
+        y = batch["y"]
+        criterion_kwargs = {k: batch[k] for k in batch.keys() - {"X", "y"}}
+
+        with torch.no_grad():
+            y_pred = self.model(X)
+            mll = self.mll(y_pred, y, **criterion_kwargs)
+            self.eval_losses.append(mll.item())
+
+        return mll.item()
+
 
 def get_trainer_engine(
         model_trainer,
@@ -82,7 +102,6 @@ def get_trainer_engine(
         num_saved=10,
         require_empty=False,
         create_dir=True,
-        patience=10,
         lr_scheduler=None,
         lr_scheduler_kwargs=None,
         save_history=True,
@@ -107,8 +126,6 @@ def get_trainer_engine(
         require save_dir to not contain '.pt' files
     create_dir : bool
         create save_dir if it does not exist
-    patience : int
-        number of events to wait if no improvement and then stop the training
 
     Returns
     -------
@@ -123,9 +140,6 @@ def get_trainer_engine(
     # calculate the running average of the loss function
     avg_output = RunningAverage(output_transform=lambda x: x)
     avg_output.attach(trainer_engine, "running_avg_loss")
-
-    stop = EarlyStopping(patience=patience, score_function=running_avg_loss, trainer=trainer_engine)
-    trainer_engine.add_event_handler(Events.COMPLETED, stop)
 
     # add progress bar
     tqdm_kwargs = {} if tqdm_kwargs is None else tqdm_kwargs
@@ -163,21 +177,6 @@ def get_trainer_engine(
         to_save,
     )
 
-    best_handler = Checkpoint(
-        to_save,
-        DiskSaver(
-            save_dir,
-            create_dir=create_dir,
-            require_empty=require_empty,
-        ),
-        n_saved=num_saved,
-        filename_prefix=f"{filename_prefix}_best",
-        score_function=running_avg_loss,
-        score_name="avg_epoch_loss",
-        global_step_transform=global_step_from_engine(trainer_engine),
-    )
-    trainer_engine.add_event_handler(Events.COMPLETED, best_handler)
-
     if lr_scheduler is not None:
         lr_scheduler_kwargs = {} if lr_scheduler_kwargs is None else lr_scheduler_kwargs
         scheduler = lr_scheduler(optimizer=model_trainer.optimizer, **lr_scheduler_kwargs)
@@ -187,9 +186,80 @@ def get_trainer_engine(
     return trainer_engine
 
 
+def get_evaluator_engine(
+        model_trainer,
+        trainer_engine,
+        filename_prefix,
+        save_dir,
+        num_saved=10,
+        require_empty=False,
+        create_dir=True,
+        patience=10,
+):
+    """Return evaluator_engine based on model_trainer.
+
+    Parameters
+    ----------
+    model_trainer : GPModelTrainer
+        keeps track of model, loss and optimizer
+    trainer_engine : ignite.engine.Engine
+        Engine for model_trainer
+    filename_prefix : str
+        prefix for saved checkpoint
+    save_dir : str [Default: %Y%m%d of run start]
+        directory to save checkpoints to
+    num_saved : int
+        maximum number of checkpoints to keep
+    require_empty : bool
+        require save_dir to not contain '.pt' files
+    create_dir : bool
+        create save_dir if it does not exist
+    patience : int
+        number of events to wait if no improvement and then stop the training
+
+    Returns
+    -------
+    evaluator_engine : ignite.engine.Engine
+        Engine for model_trainer performance evaluation
+    """
+    evaluator_engine = Engine(model_trainer.eval_mll)
+    # src=None: use output of evaluator engine as input to running_average
+    # output_transform:
+    loss_metric = RunningAverage(
+        src=None,
+        output_transform=lambda output: output,
+    )
+    loss_metric.attach(evaluator_engine, "running_avg_mll")
+
+    to_save = {
+        "model": model_trainer.model,
+    }
+
+    best_handler = Checkpoint(
+        to_save,
+        DiskSaver(
+            save_dir,
+            create_dir=create_dir,
+            require_empty=require_empty,
+        ),
+        n_saved=num_saved,
+        filename_prefix=f"{filename_prefix}_best",
+        score_name="running_avg_mll",
+        global_step_transform=global_step_from_engine(evaluator_engine),
+    )
+    evaluator_engine.add_event_handler(Events.COMPLETED, best_handler)
+
+    if patience is not None:
+        # add early stopping based on evaluator performance
+        stop = EarlyStopping(patience=patience, score_function=running_avg_mll, trainer=trainer_engine)
+        evaluator_engine.add_event_handler(Events.COMPLETED, stop)
+
+    return evaluator_engine
+
+
 def train_model(
         # dataloader contains x, y, *criterion_vals
-        dataloader,
+        train_loader,
         model_trainer,
         max_epochs=150,
         save_dir=time.strftime("%Y_%m_%d_%H_%M_%S"),
@@ -198,9 +268,10 @@ def train_model(
         filename_prefix=None,
         save_every=100,
         num_saved=10,
-        patience=10,
         require_empty=False,
         create_dir=True,
+        eval_loader=None,
+        patience=None,
         trainer_engine=None,
         num_threads=None,
         lr_scheduler=None,
@@ -211,8 +282,8 @@ def train_model(
 
     Parameters
     ----------
-    dataloader : torch.utils.data.DataLoader
-        loader for the data to be passed to model_trainer
+    train_loader : torch.utils.data.DataLoader
+        loader for the training data to be passed to model_trainer
     model_trainer : GPModelTrainer
         keeps track of model, loss and optimizer
     max_epochs : int
@@ -229,12 +300,14 @@ def train_model(
         number of training intervals to save checkpoints after
     num_saved : int
         maximum number of checkpoints to keep
-    patience : int
-        number of events to wait if no improvement and then stop the training
     require_empty : bool
         require save_dir to not contain '.pt' files
     create_dir : bool
         create save_dir if it does not exist
+    eval_loader : Optional[torch.utils.data.DataLoader]
+        loader for the evaluation data to be passed to model_trainer
+    patience : int
+        number of events to wait if no improvement in evaluation and then stop the training
     trainer_engine : Optional[ignite.engine.Engine]
         engine without ModelCheckpoint handler with running_avg_loss metric
     num_threads : Optional[int]
@@ -279,24 +352,42 @@ def train_model(
             num_saved=num_saved,
             require_empty=require_empty,
             create_dir=create_dir,
-            patience=patience,
             lr_scheduler=lr_scheduler,
             lr_scheduler_kwargs=lr_scheduler_kwargs,
             save_history=save_history,
         )
 
+    if eval_loader is not None:
+        eval_engine = get_evaluator_engine(
+            model_trainer=model_trainer,
+            trainer_engine=trainer_engine,
+            filename_prefix=filename_prefix,
+            save_dir=save_dir,
+            num_saved=num_saved,
+            require_empty=require_empty,
+            create_dir=create_dir,
+            patience=patience,
+        )
+        # add evaluator to trainer
+        @trainer_engine.on(Events.EPOCH_COMPLETED)
+        def run_validation():
+            eval_engine.run(eval_loader)
+
     with threadpool_limits(limits=num_threads):
-        trainer_engine.run(dataloader, max_epochs=max_epochs)
+        trainer_engine.run(train_loader, max_epochs=max_epochs)
 
     # save full model
     with open(f"{save_dir}/{filename_prefix}_full_model_{max_epochs}.pt", "wb") as f:
         dill.dump(
             {
-                "dataloader": dataloader,
+                "dataloader": train_loader,
                 "model_trainer": model_trainer,
                 "trainer_engine": trainer_engine,
             },
             f
         )
 
-    return trainer_engine
+    if eval_loader is None:
+        return trainer_engine
+    else:
+        return trainer_engine, eval_engine
