@@ -234,7 +234,7 @@ def get_evaluator_engine(
         create_dir=create_dir,
         require_empty=require_empty,
         filename_prefix=f"{filename_prefix}_best",
-        score_function=mll
+        score_function=mll,
         score_name="val_mll",
         global_step_transform=global_step_from_engine(trainer_engine),
     )
