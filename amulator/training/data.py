@@ -15,6 +15,7 @@ class DictionaryDataset(Dataset):
         y = self.y[index]
         extra = {
             kw: val[index] for kw, val in self.extra.items()
+            if val.shape[0] == self.X.shape[0]
         }
         return {'X': X, 'y': y, **extra}
 
