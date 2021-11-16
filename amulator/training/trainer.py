@@ -51,14 +51,16 @@ class GPModelTrainer(ModelTrainer):
             likelihood,
             mll,
             optimizer,
+            criterion_extra_keys,
             *args,
-            **kwargs
+            **kwargs,
     ):
         super().__init__(model=model, criterion=None, optimizer=optimizer)
         # include likelihood to load model from checkpoint
         self.likelihood = likelihood
         # GPModel objective is -mll
         self.mll = mll
+        self.criterion_extra_keys = criterion_extra_keys
         self.losses = []
         self.eval_losses = []
 
@@ -69,7 +71,7 @@ class GPModelTrainer(ModelTrainer):
         # our GP model uses Dictionarydataset to allow extra kwargs to mll
         X = batch["X"]
         y = batch["y"]
-        criterion_kwargs = {k: batch[k] for k in batch.keys() - {"X", "y"}}
+        criterion_kwargs = {k: batch[k] for k in self.criterion_extra_keys}
 
         y_pred = self.model(X)
         # criterion is given by marginal likelihood => make negative
@@ -85,7 +87,7 @@ class GPModelTrainer(ModelTrainer):
         # our GP model uses Dictionarydataset to allow extra kwargs to mll
         X = batch["X"]
         y = batch["y"]
-        criterion_kwargs = {k: batch[k] for k in batch.keys() - {"X", "y"}}
+        criterion_kwargs = {k: batch[k] for k in self.criterion_extra_keys}
 
         with torch.no_grad():
             y_pred = self.model(X)
