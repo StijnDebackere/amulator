@@ -22,7 +22,7 @@ class DictionaryDataset(Dataset):
         return self.X.shape[0]
 
 
-def load_data(X, y, **extra):
+def get_dataset(X, y, **extra):
     dataset = DictionaryDataset(X, y, **extra)
     return dataset
 
