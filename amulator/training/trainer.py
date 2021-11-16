@@ -229,6 +229,8 @@ def get_evaluator_engine(
     evaluator_engine = Engine(model_trainer.eval_mll)
     to_save = {
         "model": model_trainer.model,
+        "likelihood": model_trainer.likelihood,
+        "optimizer": model_trainer.optimizer,
     }
 
     best_handler = ModelCheckpoint(
