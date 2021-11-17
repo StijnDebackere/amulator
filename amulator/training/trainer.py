@@ -79,6 +79,7 @@ class GPModelTrainer(ModelTrainer):
         loss.backward()
         self.optimizer.step()
         self.losses.append(loss.item())
+        engine.state.lengthscale = self.model.covar_module.base_kernel.lengthscale.squeeze()
         return loss.item()
 
     def eval_mll(self, engine, batch):
@@ -137,6 +138,10 @@ def get_trainer_engine(
         Engine for model_trainer
     """
     trainer_engine = Engine(model_trainer.train_step)
+    trainer_engine.state_dict_user_keys(["lengthscale"])
+    @trainer_engine.on(Events.STARTED)
+    def init_state(_):
+        trainer_engine.state.lengthscale = None
 
     # terminate training on NaN value to prevent unnecessary loops
     trainer_engine.add_event_handler(Events.ITERATION_COMPLETED, TerminateOnNan())
@@ -151,6 +156,7 @@ def get_trainer_engine(
     pbar.attach(
         trainer_engine,
         ["running_avg_loss"],
+        state_attributes=["lengthscale"],
         event_name=Events.EPOCH_COMPLETED,
         closing_event_name=Events.COMPLETED,
     )
