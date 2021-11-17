@@ -187,6 +187,26 @@ def get_trainer_engine(
         to_save,
     )
 
+    best_handler = ModelCheckpoint(
+        save_dir,
+        n_saved=num_saved,
+        create_dir=create_dir,
+        require_empty=require_empty,
+        filename_prefix=f"{filename_prefix}_best",
+        score_function=running_avg_loss,
+        score_name="running_avg_loss",
+        global_step_transform=global_step_from_engine(trainer_engine),
+    )
+    trainer_engine.add_event_handler(
+        Events.COMPLETED,
+        best_handler,
+        {
+            "model": model_trainer.model,
+            "likelihood": model_trainer.likelihood,
+            "optimizer": model_trainer.optimizer,
+        }
+    )
+
     if lr_scheduler is not None:
         lr_scheduler_kwargs = {} if lr_scheduler_kwargs is None else lr_scheduler_kwargs
         scheduler = lr_scheduler(optimizer=model_trainer.optimizer, **lr_scheduler_kwargs)
