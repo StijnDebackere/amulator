@@ -138,7 +138,7 @@ def get_trainer_engine(
         Engine for model_trainer
     """
     trainer_engine = Engine(model_trainer.train_step)
-    trainer_engine.state_dict_user_keys(["lengthscale"])
+    trainer_engine.state_dict_user_keys.append("lengthscale")
     @trainer_engine.on(Events.STARTED)
     def init_state(_):
         trainer_engine.state.lengthscale = None
