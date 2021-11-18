@@ -198,7 +198,8 @@ def get_trainer_engine(
         global_step_transform=global_step_from_engine(trainer_engine),
     )
     trainer_engine.add_event_handler(
-        Events.COMPLETED,
+        # compare performance add end of each epoch and save best ones
+        Events.EPOCH_COMPLETED,
         best_handler,
         {
             "model": model_trainer.model,
@@ -269,6 +270,7 @@ def get_evaluator_engine(
         score_name="val_mll",
         global_step_transform=global_step_from_engine(trainer_engine),
     )
+    # evaluator_engine runs full run at end of each epoch => need to fire at COMPLETED
     evaluator_engine.add_event_handler(Events.COMPLETED, best_handler, to_save)
 
     if patience is not None:
