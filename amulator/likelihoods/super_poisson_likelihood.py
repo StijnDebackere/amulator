@@ -25,9 +25,13 @@ class SuperPoissonLikelihood(_OneDimensionalLikelihood):
         if torch.isnan(super_poisson_ratio).any() or (super_poisson_ratio < 1).any():
             raise ValueError("super_poisson_ratio contains NaNs and/or values < 1.")
 
+        # can have zero counts in log10_function_mean
+        # deal with zero values
         log10_function_mean = kwargs["log10_function_mean"]
-        function_samples = 10 ** (log10_function_ratio_samples + log10_function_mean)
+        function_mean = 10 ** log10_function_mean
+        function_mean[function_mean == 0.] = 1e-16
 
+        function_samples = function_mean * 10 ** (log10_function_ratio_samples)
         # poisson noise is set by function_samples
         # ensure noise always > function_samples
         noise = function_samples * (super_poisson_ratio + 1e-2)
