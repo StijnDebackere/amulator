@@ -43,7 +43,7 @@ setup(
         "dill>=0.3.0",
         "gpytorch>=1.5",
         "pytorch-ignite>=0.4.7",
-        "torch>=1.10.0",
+        "torch>=1.9.0",
         "threadpoolctl>=2.2.0",
         "tqdm>=4",
     ]
