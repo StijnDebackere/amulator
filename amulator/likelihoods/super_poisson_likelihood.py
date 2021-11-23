@@ -34,10 +34,16 @@ class SuperPoissonLikelihood(_OneDimensionalLikelihood):
         function_samples = function_mean * 10 ** (log10_function_ratio_samples)
         # poisson noise is set by function_samples
         # ensure noise always > function_samples
-        noise = function_samples * (super_poisson_ratio + 1e-2)
+        super_poisson_ratio_jitter = super_poisson_ratio + 1e-6
 
-        r = function_samples ** 2 / (noise - function_samples)
-        probs = function_samples / (r + function_samples)
+        # total_count := total number of failures (r)
+        # probs := success probability in individual Bernoulli trials
+        # mean = pr / (1 - p)
+        # var = mean / (1 - p) = super_poisson_ratio * mean
+        # => super_poisson_ratio = 1 / (1 - p)
+        # => p / (1 - p) = super_poisson_ratio - 1
+        r = function_samples / (super_poisson_ratio_jitter - 1)
+        probs = 1 - super_poisson_ratio_jitter ** (-1)
 
         return {
             "total_count": r,
