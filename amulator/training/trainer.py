@@ -105,6 +105,7 @@ def get_trainer_engine(
         save_dir,
         save_every=10,
         num_saved=10,
+        patience=None,
         require_empty=False,
         create_dir=True,
         lr_scheduler=None,
@@ -127,6 +128,8 @@ def get_trainer_engine(
         number of training intervals to save checkpoints after
     num_saved : int
         maximum number of checkpoints to keep
+    patience : int
+        number of events to wait if no improvement in evaluation and then stop the training
     require_empty : bool
         require save_dir to not contain '.pt' files
     create_dir : bool
@@ -207,6 +210,10 @@ def get_trainer_engine(
             "optimizer": model_trainer.optimizer,
         }
     )
+    if patience is not None:
+        # add early stopping based on trainer performance
+        stop = EarlyStopping(patience=patience, score_function=running_avg_loss, trainer=trainer_engine)
+        trainer_engine.add_event_handler(Events.EPOCH_COMPLETED, stop)
 
     if lr_scheduler is not None:
         lr_scheduler_kwargs = {} if lr_scheduler_kwargs is None else lr_scheduler_kwargs
@@ -376,6 +383,7 @@ def train_model(
             save_dir=save_dir,
             save_every=save_every,
             num_saved=num_saved,
+            patience=patience,
             require_empty=require_empty,
             create_dir=create_dir,
             lr_scheduler=lr_scheduler,
