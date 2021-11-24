@@ -407,11 +407,15 @@ def train_model(
         def run_validation():
             eval_engine.run(eval_loader)
 
-    with threadpool_limits(limits=num_threads):
-        trainer_engine.run(train_loader, max_epochs=max_epochs)
+    try:
+        with threadpool_limits(limits=num_threads):
+            trainer_engine.run(train_loader, max_epochs=max_epochs)
+
+    except KeyboardInterrupt:
+        print("Model training interrupted, returning trainer.")
 
     # save full model
-    with open(f"{save_dir}/{filename_prefix}_full_model_{max_epochs}.pt", "wb") as f:
+    with open(f"{save_dir}/{filename_prefix}_full_model_{trainer_engine.state.epoch}.pt", "wb") as f:
         try:
             dill.dump(
                 {
