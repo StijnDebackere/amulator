@@ -412,7 +412,11 @@ def train_model(
             trainer_engine.run(train_loader, max_epochs=max_epochs)
 
     except KeyboardInterrupt:
-        print("Model training interrupted, returning trainer.")
+        print("Model training interrupted, returning model_trainer.")
+        if eval_loader is None:
+            return trainer_engine
+        else:
+            return trainer_engine, eval_engine
 
     # save full model
     with open(f"{save_dir}/{filename_prefix}_full_model_{trainer_engine.state.epoch}.pt", "wb") as f:
