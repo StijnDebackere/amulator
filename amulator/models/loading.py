@@ -30,5 +30,5 @@ def read_super_poisson_gp_model_trainer(
         likelihood=likelihood,
         mll=mll,
         optimizer=optimizer,
-        criterion_extra_keys=["super_poisson_ratio", "log10_function_mean"],
+        criterion_extra_keys=["super_poisson_ratio", "log_function_mean"],
     )
