@@ -364,6 +364,9 @@ def train_model(
     save checkpoints to
     {save_dir}/{save_prefix}_{model_name}_{likelihood_name}_optim_{optimizer_name}_{save_suffix}
     """
+    # see https://github.com/pytorch/ignite/issues/433#issuecomment-463691245
+    logging.getLogger("ignite.engine.engine.Engine").setLevel(logging.WARNING)
+
     if filename_prefix is None:
         if save_suffix is None:
             save_suffix = ""
@@ -413,10 +416,7 @@ def train_model(
 
     except KeyboardInterrupt:
         print("Model training interrupted, returning model_trainer.")
-        if eval_loader is None:
-            return trainer_engine
-        else:
-            return trainer_engine, eval_engine
+        return model_trainer
 
     # save full model
     with open(f"{save_dir}/{filename_prefix}_full_model_{trainer_engine.state.epoch}.pt", "wb") as f:
@@ -433,7 +433,4 @@ def train_model(
             print("Full model could not be saved!")
             print(traceback.format_exc())
 
-    if eval_loader is None:
-        return trainer_engine
-    else:
-        return trainer_engine, eval_engine
+    return model_trainer
