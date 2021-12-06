@@ -1,11 +1,11 @@
 import warnings
 
 from gpytorch.distributions import base_distributions
-from gpytorch.likelihoods.likelihood import _OneDimensionalLikelihood
+from gpytorch.likelihoods.likelihood import FixedNoiseGaussianLikelihood
 import torch
 
 
-class GaussianLikelihood(gaussian_likelihood.FixedNoiseGaussianLikelihood):
+class GaussianLikelihood(FixedNoiseGaussianLikelihood):
     r"""A Likelihood that assumes fixed heteroscedastic noise. This is useful when you have fixed, known observation
     noise for each training example.
 
