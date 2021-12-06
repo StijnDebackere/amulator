@@ -50,7 +50,10 @@ def get_gaussian_model_trainer(
 
     # determine optimizer
     optimizer = torch.optim.Adam(
-        model.parameters(),
+        [
+            {"params": model.parameters()},
+            {"params": likelihood.parameters()},
+        ],
         lr=lr,
         **optimizer_kwargs,
     )
