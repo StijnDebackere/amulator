@@ -12,6 +12,7 @@ class GPModel(ApproximateGP):
             mean_prior=None,
             outputscale_prior=None,
             lengthscale_prior=None,
+            learn_inducing_locations=True,
     ):
         variational_distribution = CholeskyVariationalDistribution(
             inducing_points.size(0),
@@ -21,7 +22,7 @@ class GPModel(ApproximateGP):
             self,
             inducing_points,
             variational_distribution,
-            learn_inducing_locations=True,
+            learn_inducing_locations=learn_inducing_locations,
         )
         super(GPModel, self).__init__(variational_strategy)
         self.mean_module = gpytorch.means.ConstantMean(prior=mean_prior)
