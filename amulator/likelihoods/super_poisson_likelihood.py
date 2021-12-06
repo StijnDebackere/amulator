@@ -15,6 +15,7 @@ class SuperPoissonLikelihood(_OneDimensionalLikelihood):
     :param bool ratio: model predicts ratio to mean :math:`N / \maths N \rangle`
     """
     def __init__(self, log=True, mean=True):
+        super().__init__()
         self.log = log
         self.mean = mean
 
