@@ -51,7 +51,7 @@ class GPModelTrainer(ModelTrainer):
             likelihood,
             mll,
             optimizer,
-            criterion_extra_keys,
+            criterion_extra_keys=None,
             *args,
             **kwargs,
     ):
@@ -60,7 +60,7 @@ class GPModelTrainer(ModelTrainer):
         self.likelihood = likelihood
         # GPModel objective is -mll
         self.mll = mll
-        self.criterion_extra_keys = criterion_extra_keys
+        self.criterion_extra_keys = criterion_extra_keys if criterion_extra_keys is not None else {}
         self.losses = []
         self.eval_losses = []
 

@@ -1,3 +1,5 @@
+import warnings
+
 from gpytorch.distributions import base_distributions
 from gpytorch.likelihoods.likelihood import _OneDimensionalLikelihood
 import torch
@@ -5,44 +7,54 @@ import torch
 
 class SuperPoissonLikelihood(_OneDimensionalLikelihood):
     r"""A NegativeBinomial likelihood/noise model for GP regression for
-    Poisson-like data with possible super-Poisson errors.
+    Poisson-like data :math:`N` with possible super-Poisson errors
+    with variance :math:`\alpha N`, where :math:`\alpha > 1` is the
+    super_poisson_ratio.
 
-    Model predicts :math:`\log f - \mathbb{E} \log f` and
-    data is :math:`f` following a NegativeBinomial distribution with
-    mean :math:`f` and variance :math:`\alpha f`, where :math:`\alpha > 1`
-    is the super_poisson_ratio.
-
+    :param bool log: model predicts log counts :math:`\log N`
+    :param bool ratio: model predicts ratio to mean :math:`N / \maths N \rangle`
     """
-    def _get_kwargs(self, log_function_ratio_samples, **kwargs):
+    def __init__(self, log=True, mean=True):
+        self.log = log
+        self.mean = mean
+
+    def _get_kwargs(self, model_samples, **kwargs):
         if "super_poisson_ratio" not in kwargs:
             raise ValueError("'super_poisson_ratio' should be in kwargs")
-
-        if "log_function_mean" not in kwargs:
-            raise ValueError("'log_function_mean' should be in kwargs")
 
         super_poisson_ratio = kwargs["super_poisson_ratio"]
         # ensure noise is always super-poisson
         if torch.isnan(super_poisson_ratio).any() or (super_poisson_ratio < 1).any():
             raise ValueError("super_poisson_ratio contains NaNs and/or values < 1.")
 
-        # can have zero counts in log_function_mean
-        # deal with zero values
-        log_function_mean = kwargs["log_function_mean"]
-        function_mean = log_function_mean.exp()
-        function_mean[function_mean == 0.] = 1e-16
+        if self.log:
+            model_samples = model_samples.exp()
 
-        function_samples = function_mean * log_function_ratio_samples.exp()
-        # poisson noise is set by function_samples
-        # ensure noise always > function_samples
+        if self.mean:
+            if "model_mean" not in kwargs:
+                raise ValueError("model_mean needs to be specified if {self.mean=}")
+
+            else:
+                model_mean = kwargs["model_mean"]
+                if self.log:
+                    model_mean = model_mean.exp()
+
+                if torch.any(model_mean == 0.):
+                    warnings.warn("model_mean contains 0.")
+
+            model_samples = model_samples * model_mean
+
+        # ensure super_poisson_ratio > 1 to avoid divergences in r & probs
         super_poisson_ratio_jitter = super_poisson_ratio + 1e-6
 
+        alpha = super_poisson_ratio_jitter
         # total_count := total number of failures (r)
         # probs := success probability in individual Bernoulli trials
         # mean = pr / (1 - p)
         # var = mean / (1 - p) = super_poisson_ratio * mean
         # => super_poisson_ratio = 1 / (1 - p)
         # => p / (1 - p) = super_poisson_ratio - 1
-        r = function_samples / (super_poisson_ratio_jitter - 1)
+        r = model_samples / (super_poisson_ratio_jitter - 1)
         probs = 1 - super_poisson_ratio_jitter ** (-1)
 
         return {
@@ -50,21 +62,21 @@ class SuperPoissonLikelihood(_OneDimensionalLikelihood):
             "probs": probs,
         }
 
-    def forward(self, log_function_ratio_samples, **kwargs):
-        binom_kwargs = self._get_kwargs(log_function_ratio_samples, **kwargs)
+    def forward(self, model_samples, **kwargs):
+        binom_kwargs = self._get_kwargs(model_samples, **kwargs)
         return base_distributions.NegativeBinomial(**binom_kwargs)
 
-    def log_marginal(self, observations, log_function_ratio_dist, *args, **kwargs):
-        marginal = self.marginal(log_function_ratio_dist, *args, **kwargs)
+    def log_marginal(self, observations, model_dist, *args, **kwargs):
+        marginal = self.marginal(model_dist, *args, **kwargs)
         return marginal.log_prob(observations.to(torch.int))
 
-    def marginal(self, log_function_ratio_dist, **kwargs):
-        binom_kwargs = self._get_kwargs(log_function_ratio_dist.mean, **kwargs)
+    def marginal(self, model_dist, **kwargs):
+        binom_kwargs = self._get_kwargs(model_dist.mean, **kwargs)
         return base_distributions.NegativeBinomial(**binom_kwargs)
 
-    def expected_log_prob(self, observations, log_function_ratio_dist, *args, **kwargs):
-        prob_lambda = lambda log_function_ratio_samples: self.forward(
-            log_function_ratio_samples, *args, **kwargs
+    def expected_log_prob(self, observations, model_dist, *args, **kwargs):
+        prob_lambda = lambda model_samples: self.forward(
+            model_samples, *args, **kwargs
         ).log_prob(observations.to(torch.int))
-        log_prob = self.quadrature(prob_lambda, log_function_ratio_dist)
+        log_prob = self.quadrature(prob_lambda, model_dist)
         return log_prob
