@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import logging
 import time
 import traceback
 
@@ -51,7 +52,7 @@ class GPModelTrainer(ModelTrainer):
             likelihood,
             mll,
             optimizer,
-            criterion_extra_keys=None,
+            criterion_kwargs=None,
             *args,
             **kwargs,
     ):
@@ -60,7 +61,9 @@ class GPModelTrainer(ModelTrainer):
         self.likelihood = likelihood
         # GPModel objective is -mll
         self.mll = mll
-        self.criterion_extra_keys = criterion_extra_keys if criterion_extra_keys is not None else {}
+
+        # key: kwarg for mll, val: matching kwarg in batch
+        self.criterion_kwargs = criterion_kwargs if criterion_kwargs is not None else {}
         self.losses = []
         self.eval_losses = []
 
@@ -71,7 +74,9 @@ class GPModelTrainer(ModelTrainer):
         # our GP model uses Dictionarydataset to allow extra kwargs to mll
         X = batch["X"]
         y = batch["y"]
-        criterion_kwargs = {k: batch[k] for k in self.criterion_extra_keys}
+        criterion_kwargs = {
+            k: batch[b] for k, b in self.criterion_kwargs.items()
+        }
 
         y_pred = self.model(X)
         # criterion is given by marginal likelihood => make negative
@@ -88,7 +93,9 @@ class GPModelTrainer(ModelTrainer):
         # our GP model uses Dictionarydataset to allow extra kwargs to mll
         X = batch["X"]
         y = batch["y"]
-        criterion_kwargs = {k: batch[k] for k in self.criterion_extra_keys}
+        criterion_kwargs = {
+            k: batch[b] for k, b in self.criterion_kwargs.items()
+        }
 
         with torch.no_grad():
             y_pred = self.model(X)
