@@ -20,10 +20,14 @@ class GaussianLikelihood(_OneDimensionalLikelihood):
         self.mean = mean
 
     def _get_kwargs(self, model_samples, **kwargs):
-        if "noise" not in kwargs:
-            raise ValueError("noise needs to be in kwargs")
+        if "super_poisson_ratio" not in kwargs:
+            raise ValueError("'super_poisson_ratio' should be in kwargs")
 
-        noise = kwargs["noise"]
+        super_poisson_ratio = kwargs["super_poisson_ratio"]
+        # ensure super_poisson_ratio > 1 to avoid divergences in r & probs
+        if torch.isnan(super_poisson_ratio).any() or (super_poisson_ratio < 1).any():
+            raise ValueError("super_poisson_ratio contains NaNs and/or values < 1.")
+
         if self.log:
             model_samples = model_samples.exp()
 
@@ -41,9 +45,11 @@ class GaussianLikelihood(_OneDimensionalLikelihood):
 
             model_samples = model_samples * model_mean
 
+        loc = model_samples
+        scale = (model_samples * super_poisson_ratio).sqrt()
         return {
             "loc": model_samples,
-            "scale": noise.sqrt(),
+            "scale": scale,
         }
 
     def forward(self, model_samples, **kwargs):

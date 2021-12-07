@@ -22,7 +22,7 @@ def get_gaussian_model_trainer(
 
     X = dataloader.dataset[:]["X"]
     y = dataloader.dataset[:]["y"]
-    yvar = dataloader.dataset[:]["yvar"]
+    super_poisson_ratio = dataloader.dataset[:]["super_poisson_ratio"]
 
     if learn_inducing_locations:
         # initialize GP model
@@ -41,19 +41,12 @@ def get_gaussian_model_trainer(
     )
     likelihood = GaussianLikelihood(**likelihood_kwargs)
     mll = VariationalELBO(likelihood, model, num_data=len(dataloader.dataset))
-    criterion_kwargs = {"noise": "yvar"}
+    criterion_kwargs = {"super_poisson_ratio": "super_poisson_ratio"}
     if likelihood.mean:
         criterion_kwargs["model_mean"] = "model_mean"
 
     # determine optimizer
-    optimizer = torch.optim.Adam(
-        [
-            {"params": model.parameters()},
-            {"params": likelihood.parameters()},
-        ],
-        lr=lr,
-        **optimizer_kwargs,
-    )
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, **optimizer_kwargs)
     model_trainer = GPModelTrainer(
         model=model,
         likelihood=likelihood,
