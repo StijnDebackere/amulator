@@ -2,11 +2,11 @@ import math
 import warnings
 
 from gpytorch.distributions import base_distributions
-from gpytorch.likelihoods import FixedNoiseGaussianLikelihood
+from gpytorch.likelihoods.likelihood import _OneDimensionalLikelihood
 import torch
 
 
-class GaussianLikelihood(FixedNoiseGaussianLikelihood):
+class GaussianLikelihood(_OneDimensionalLikelihood):
     r"""A Normal likelihood/noise model for GP regression for data
     :math:`N` with noise.
 
