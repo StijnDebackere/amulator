@@ -39,10 +39,7 @@ def get_gaussian_model_trainer(
         learn_inducing_locations=learn_inducing_locations,
         **model_kwargs,
     )
-    likelihood = GaussianLikelihood(
-        noise=yvar,
-        **likelihood_kwargs,
-    )
+    likelihood = GaussianLikelihood(**likelihood_kwargs)
     mll = VariationalELBO(likelihood, model, num_data=len(dataloader.dataset))
     criterion_kwargs = {"noise": "yvar"}
     if likelihood.mean:
