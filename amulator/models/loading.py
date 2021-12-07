@@ -22,7 +22,7 @@ def get_gaussian_model_trainer(
 
     X = dataloader.dataset[:]["X"]
     y = dataloader.dataset[:]["y"]
-    yvar = dataloader.dataset["yvar"]
+    yvar = dataloader.dataset[:]["yvar"]
 
     if learn_inducing_locations:
         # initialize GP model
