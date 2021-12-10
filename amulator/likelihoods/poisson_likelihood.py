@@ -5,16 +5,38 @@ import torch
 
 class PoissonLikelihood(_OneDimensionalLikelihood):
     r"""A Poisson likelihood/noise model for GP regression for
-    Poisson-like data.
+    Poisson-like data :math:`N` with possible super-Poisson errors
+    with variance :math:`\alpha N`, where :math:`\alpha > 1` is the
+    super_poisson_ratio.
 
-    Model predicts :math:`\log_{10} N` and data is :math:`N`.
-
+    :param bool log: model predicts log counts :math:`\log N`
+    :param bool ratio: model predicts ratio to mean :math:`N / \maths N \rangle`
     """
-    def _get_kwargs(self, log_function_samples, **kwargs):
-        function_samples = np.exp(log_function_samples)
+    def __init__(self, log=True, mean=True, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.log = log
+        self.mean = mean
+
+    def _get_kwargs(self, model_samples, **kwargs):
+        if self.log:
+            model_samples = np.exp(model_samples)
+
+        if self.mean:
+            if "model_mean" not in kwargs:
+                raise ValueError("model_mean needs to be specified if {self.mean=}")
+
+            else:
+                model_mean = kwargs["model_mean"]
+                if self.log:
+                    model_mean = model_mean.exp()
+
+                if torch.any(model_mean == 0.):
+                    warnings.warn("model_mean contains 0.")
+
+            model_samples = model_samples * model_mean
 
         # poisson rate is set by function_samples
-        rate = function_samples
+        rate = model_samples
         return {
             "rate": rate,
         }
