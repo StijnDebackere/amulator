@@ -19,7 +19,7 @@ class PoissonLikelihood(_OneDimensionalLikelihood):
 
     def _get_kwargs(self, model_samples, **kwargs):
         if self.log:
-            model_samples = np.exp(model_samples)
+            model_samples = model_samples.exp()
 
         if self.mean:
             if "model_mean" not in kwargs:
