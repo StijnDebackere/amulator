@@ -42,9 +42,9 @@ class GaussianLikelihood(_OneDimensionalLikelihood):
             model_samples = model_samples * model_mean
 
         loc = model_samples
-        scale = noise.sqrt()
+        scale = noise.clamp(1e-2).sqrt()
         return {
-            "loc": model_samples,
+            "loc": loc,
             "scale": scale,
         }
 

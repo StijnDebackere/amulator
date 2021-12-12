@@ -1,3 +1,5 @@
+import warnings
+
 from gpytorch.distributions import base_distributions
 from gpytorch.likelihoods.likelihood import _OneDimensionalLikelihood
 import torch
@@ -37,6 +39,7 @@ class PoissonLikelihood(_OneDimensionalLikelihood):
 
         # poisson rate is set by function_samples
         rate = model_samples
+        rate = rate.clamp(1e-2)
         return {
             "rate": rate,
         }
