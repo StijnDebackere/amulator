@@ -13,7 +13,7 @@ GET_MODEL = {
     "super_poisson": GPModel,
 }
 GET_LIKELIHOOD = {
-    "poisson": PoisonLikelihood,
+    "poisson": PoissonLikelihood,
     "gaussian": GaussianLikelihood,
     "super_poisson": SuperPoissonLikelihood,
 }
