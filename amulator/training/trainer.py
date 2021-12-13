@@ -21,7 +21,7 @@ from torch.optim.lr_scheduler import (
 )
 from threadpoolctl import threadpool_limits
 
-from amulator.models.loading import get_filename_prefix
+import amulator.models.loading as loading
 from amulator.training.data import DictionaryDataset
 
 
@@ -376,7 +376,7 @@ def train_model(
     logging.getLogger("ignite.engine.engine.Engine").setLevel(logging.WARNING)
 
     if filename_prefix is None:
-        filename_prefix = get_filename_prefix(
+        filename_prefix = loading.get_filename_prefix(
             model=model_trainer.model,
             likelihood=model_trainer.likelihood,
             optimizer=model_trainer.optimizer,

@@ -7,28 +7,6 @@ from amulator.models import GPModel, ExactGPModel
 from amulator.training.trainer import GPModelTrainer
 
 
-GET_MODEL = {
-    "poisson": GPModel,
-    "gaussian": GPModel,
-    "super_poisson": GPModel,
-}
-GET_LIKELIHOOD = {
-    "poisson": PoissonLikelihood,
-    "gaussian": GaussianLikelihood,
-    "super_poisson": SuperPoissonLikelihood,
-}
-GET_TRAINER_FROM_DATALOADER = {
-    "poisson": get_poisson_model_trainer,
-    "gaussian": get_gaussian_model_trainer,
-    "super_poisson": get_super_poisson_model_trainer,
-}
-GET_TRAINER_FROM_CHECKPOINT = {
-    "poisson": read_poisson_gp_model_trainer,
-    "gaussian": read_gaussian_gp_model_trainer,
-    "super_poisson": read_super_poisson_gp_model_trainer,
-}
-
-
 def get_filename_prefix(
         model=None,
         likelihood=None,
@@ -64,17 +42,17 @@ def get_filename_prefix(
     if model is None:
         model_name = ""
     else:
-        model_name = type(model).__name__
+        model_name = model.__name__
 
     if likelihood is None:
         likelihood_name = ""
     else:
-        likelihood_name = type(likelihood).__name__
+        likelihood_name = likelihood.__name__
 
     if optimizer is None:
         optimizer_name = ""
     else:
-        optimizer_name = type(optimizer).__name__
+        optimizer_name = optimizer.__name__
 
     model_info = f"{model_name}_{likelihood_name}_{optimizer_name}".strip("_")
     filename_prefix = f"{save_prefix}_{model_info}_{save_suffix}".strip("_")
@@ -331,3 +309,25 @@ def read_super_poisson_gp_model_trainer(
         optimizer=optimizer,
         criterion_kwargs=criterion_kwargs,
     )
+
+
+GET_MODEL = {
+    "poisson": GPModel,
+    "gaussian": GPModel,
+    "super_poisson": GPModel,
+}
+GET_LIKELIHOOD = {
+    "poisson": PoissonLikelihood,
+    "gaussian": GaussianLikelihood,
+    "super_poisson": SuperPoissonLikelihood,
+}
+GET_TRAINER_FROM_DATALOADER = {
+    "poisson": get_poisson_model_trainer,
+    "gaussian": get_gaussian_model_trainer,
+    "super_poisson": get_super_poisson_model_trainer,
+}
+GET_TRAINER_FROM_CHECKPOINT = {
+    "poisson": read_poisson_gp_model_trainer,
+    "gaussian": read_gaussian_gp_model_trainer,
+    "super_poisson": read_super_poisson_gp_model_trainer,
+}
