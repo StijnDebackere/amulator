@@ -14,6 +14,21 @@ TRAINER_OPTIONS = {
 }
 
 
+def get_filename_prefix(save_prefix, model_trainer, save_suffix):
+    if save_suffix is None:
+        save_suffix = ""
+    if save_prefix is None:
+        save_prefix = ""
+
+    model_name = type(model_trainer.model).__name__
+    likelihood_name = type(model_trainer.likelihood).__name__
+    optimizer_name = type(model_trainer.optimizer).__name__
+    model_info = f"{model_name}_{likelihood_name}_optim_{optimizer_name}"
+    filename_prefix = f"{save_prefix}_{model_info}_{save_suffix}".strip("_")
+
+    return filename_prefix
+
+
 def get_gaussian_model_trainer(
         dataloader,
         num_inducing,
