@@ -377,9 +377,9 @@ def train_model(
 
     if filename_prefix is None:
         filename_prefix = loading.get_filename_prefix(
-            model=model_trainer.model,
-            likelihood=model_trainer.likelihood,
-            optimizer=model_trainer.optimizer,
+            model=type(model_trainer.model),
+            likelihood=type(model_trainer.likelihood),
+            optimizer=type(model_trainer.optimizer),
             save_prefix=save_prefix,
             save_suffix=save_suffix
         )
