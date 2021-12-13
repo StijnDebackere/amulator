@@ -7,23 +7,76 @@ from amulator.models import GPModel, ExactGPModel
 from amulator.training.trainer import GPModelTrainer
 
 
-TRAINER_OPTIONS = {
+GET_MODEL = {
+    "poisson": GPModel,
+    "gaussian": GPModel,
+    "super_poisson": GPModel,
+}
+GET_LIKELIHOOD = {
+    "poisson": PoisonLikelihood,
+    "gaussian": GaussianLikelihood,
+    "super_poisson": SuperPoissonLikelihood,
+}
+GET_TRAINER_FROM_DATALOADER = {
     "poisson": get_poisson_model_trainer,
     "gaussian": get_gaussian_model_trainer,
     "super_poisson": get_super_poisson_model_trainer,
 }
+GET_TRAINER_FROM_CHECKPOINT = {
+    "poisson": read_poisson_gp_model_trainer,
+    "gaussian": read_gaussian_gp_model_trainer,
+    "super_poisson": read_super_poisson_gp_model_trainer,
+}
 
 
-def get_filename_prefix(save_prefix, model_trainer, save_suffix):
+def get_filename_prefix(
+        model=None,
+        likelihood=None,
+        optimizer=None,
+        save_prefix=None,
+        save_suffix=None,
+):
+    """Get consistent filename_prefix for provided model setup.
+
+    Parameters
+    ----------
+    model : amulator.models GP model
+        class of model used
+    likelihood : amulator.likelihoods likelihood
+        class of likelihood used
+    optimizer : torch.optim optimizer
+        optimizer used
+    save_prefix : str
+        prefix to save filename
+    save_suffix : str
+        suffix to save filename
+
+    Returns
+    -------
+    filename_prefix : str
+        {save_prefix}_{model.__name__}_{likelihood.__name__}_{optimizer.__name__}_{save_suffix}
+    """
     if save_suffix is None:
         save_suffix = ""
     if save_prefix is None:
         save_prefix = ""
 
-    model_name = type(model_trainer.model).__name__
-    likelihood_name = type(model_trainer.likelihood).__name__
-    optimizer_name = type(model_trainer.optimizer).__name__
-    model_info = f"{model_name}_{likelihood_name}_optim_{optimizer_name}"
+    if model is None:
+        model_name = ""
+    else:
+        model_name = type(model).__name__
+
+    if likelihood is None:
+        likelihood_name = ""
+    else:
+        likelihood_name = type(likelihood).__name__
+
+    if optimizer is None:
+        optimizer_name = ""
+    else:
+        optimizer_name = type(optimizer).__name__
+
+    model_info = f"{model_name}_{likelihood_name}_{optimizer_name}".strip("_")
     filename_prefix = f"{save_prefix}_{model_info}_{save_suffix}".strip("_")
 
     return filename_prefix

@@ -377,8 +377,10 @@ def train_model(
 
     if filename_prefix is None:
         filename_prefix = get_filename_prefix(
+            model=model_trainer.model,
+            likelihood=model_trainer.likelihood,
+            optimizer=model_trainer.optimizer,
             save_prefix=save_prefix,
-            model_trainer=model_trainer,
             save_suffix=save_suffix
         )
 
