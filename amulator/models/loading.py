@@ -7,6 +7,13 @@ from amulator.models import GPModel, ExactGPModel
 from amulator.training.trainer import GPModelTrainer
 
 
+TRAINER_OPTIONS = {
+    "poisson": get_poisson_model_trainer,
+    "gaussian": get_gaussian_model_trainer,
+    "super_poisson": get_super_poisson_model_trainer,
+}
+
+
 def get_gaussian_model_trainer(
         dataloader,
         num_inducing,
