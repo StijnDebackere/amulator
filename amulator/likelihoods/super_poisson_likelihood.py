@@ -27,7 +27,8 @@ class SuperPoissonLikelihood(_OneDimensionalLikelihood):
         poisson_ratio = kwargs["poisson_ratio"]
         # ensure noise is always super-poisson
         if torch.isnan(poisson_ratio).any():
-            raise ValueError("poisson_ratio contains NaNs.")
+            warnings.warn("forcing nans in poisson_ratio to 1")
+            poisson_ratio[poisson_ratio.isnan()] = 1.
 
         if (poisson_ratio < 1).any():
             warnings.warn("forcing poisson_ratio >= 1")
@@ -51,9 +52,8 @@ class SuperPoissonLikelihood(_OneDimensionalLikelihood):
             model_samples = model_samples * model_mean
 
         # ensure poisson_ratio > 1 to avoid divergences in r & probs
-        poisson_ratio_jitter = poisson_ratio + 1e-6
+        alpha = poisson_ratio + 1e-6
 
-        alpha = poisson_ratio_jitter
         # total_count := total number of failures (r)
         # probs := success probability in individual Bernoulli trials
         # mean = pr / (1 - p)
