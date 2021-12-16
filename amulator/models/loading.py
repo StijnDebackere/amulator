@@ -258,7 +258,7 @@ def get_super_poisson_model_trainer(
     )
     likelihood = SuperPoissonLikelihood(**likelihood_kwargs)
     mll = VariationalELBO(likelihood, model, num_data=len(dataloader.dataset))
-    criterion_kwargs = {"super_poisson_ratio": "super_poisson_ratio"}
+    criterion_kwargs = {"poisson_ratio": "poisson_ratio"}
     if likelihood.mean:
         criterion_kwargs["model_mean"] = "model_mean"
 
@@ -298,7 +298,7 @@ def read_super_poisson_gp_model_trainer(
     optimizer = optimizer(model.parameters())
     optimizer.load_state_dict(checkpoint_info["optimizer"])
 
-    criterion_kwargs = {"super_poisson_ratio": "super_poisson_ratio"}
+    criterion_kwargs = {"poisson_ratio": "poisson_ratio"}
     if mean:
         criterion_kwargs["model_mean"] = "model_mean"
 
