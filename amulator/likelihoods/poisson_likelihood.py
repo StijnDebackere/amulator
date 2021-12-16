@@ -7,17 +7,16 @@ import torch
 
 class PoissonLikelihood(_OneDimensionalLikelihood):
     r"""A Poisson likelihood/noise model for GP regression for
-    Poisson-like data :math:`N` with possible super-Poisson errors
-    with variance :math:`\alpha N`, where :math:`\alpha > 1` is the
-    super_poisson_ratio.
+    Poisson-like data :math:`N`.
 
     :param bool log: model predicts log counts :math:`\log N`
     :param bool ratio: model predicts ratio to mean :math:`N / \maths N \rangle`
     """
-    def __init__(self, log=True, mean=True, *args, **kwargs):
+    def __init__(self, log=True, mean=True, likelihood_kwargs=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.log = log
         self.mean = mean
+        self.likelihood_kwargs = {} if likelihood_kwargs is None else likelihood_kwargs
 
     def _get_kwargs(self, model_samples, **kwargs):
         if self.log:
@@ -46,7 +45,7 @@ class PoissonLikelihood(_OneDimensionalLikelihood):
 
     def forward(self, log_function_samples, **kwargs):
         poisson_kwargs = self._get_kwargs(log_function_samples, **kwargs)
-        return base_distributions.Poisson(**poisson_kwargs)
+        return base_distributions.Poisson(**poisson_kwargs, **self.likelihood_kwargs)
 
     def log_marginal(self, observations, log_function_dist, *args, **kwargs):
         marginal = self.marginal(log_function_dist, *args, **kwargs)
@@ -54,7 +53,7 @@ class PoissonLikelihood(_OneDimensionalLikelihood):
 
     def marginal(self, log_function_dist, **kwargs):
         poisson_kwargs = self._get_kwargs(log_function_dist.mean, **kwargs)
-        return base_distributions.Poisson(**poisson_kwargs)
+        return base_distributions.Poisson(**poisson_kwargs, **self.likelihood_kwargs)
 
     def expected_log_prob(self, observations, log_function_dist, *args, **kwargs):
         prob_lambda = lambda log_function_samples: self.forward(
