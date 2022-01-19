@@ -322,9 +322,9 @@ GET_LIKELIHOOD = {
     "super_poisson": SuperPoissonLikelihood,
 }
 GET_DATALOADER_KEYS = {
-    "poisson": {"X", "y", "model_mean"},
-    "gaussian": {"X", "y", "yvar", "model_mean"},
-    "super_poisson": {"X", "y", "poisson_ratio", "model_mean"},
+    "poisson": {"X", "y", "model_mean", "n2N"},
+    "gaussian": {"X", "y", "yvar", "model_mean", "n2N"},
+    "super_poisson": {"X", "y", "poisson_ratio", "model_mean", "n2N"},
 }
 GET_TRAINER_FROM_DATALOADER = {
     "poisson": get_poisson_model_trainer,
