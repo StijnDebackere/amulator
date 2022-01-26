@@ -43,11 +43,11 @@ class SuperPoissonLikelihood(_OneDimensionalLikelihood):
                 raise ValueError("model_mean needs to be specified if {self.mean=}")
 
             model_mean = kwargs["model_mean"]
+            if self.log:
+                model_mean = model_mean.exp()
+
             if torch.any(model_mean == 0.):
                 warnings.warn("model_mean contains 0.")
-
-            if log:
-                model_mean = model_mean.exp()
 
             # take out ratio
             model_samples = model_samples * model_mean

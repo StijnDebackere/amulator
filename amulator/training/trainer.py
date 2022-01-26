@@ -414,7 +414,6 @@ def train_model(
         @trainer_engine.on(Events.EPOCH_COMPLETED)
         def run_validation():
             eval_engine.run(eval_loader)
-
     try:
         with threadpool_limits(limits=num_threads):
             trainer_engine.run(train_loader, max_epochs=max_epochs)
