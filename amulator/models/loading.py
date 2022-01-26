@@ -96,6 +96,9 @@ def get_gaussian_model_trainer(
     if likelihood.mean:
         criterion_kwargs["model_mean"] = "model_mean"
 
+    if likelihood.n2N:
+        criterion_kwargs["n2N"] = "n2N"
+
     # determine optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, **optimizer_kwargs)
     model_trainer = GPModelTrainer(
@@ -114,6 +117,7 @@ def read_gaussian_gp_model_trainer(
         optimizer,
         log=True,
         mean=True,
+        n2N=True,
 ):
     """Load the model_trainer from the checkpoint file with state_dict for
     the model, likelihood, mll and optimizer."""
@@ -131,6 +135,8 @@ def read_gaussian_gp_model_trainer(
     criterion_kwargs = {"noise": "yvar"}
     if mean:
         criterion_kwargs["model_mean"] = "model_mean"
+    if n2N:
+        criterion_kwargs["n2N"] = "n2N"
 
     return GPModelTrainer(
         model=model,
@@ -177,6 +183,9 @@ def get_poisson_model_trainer(
     if likelihood.mean:
         criterion_kwargs["model_mean"] = "model_mean"
 
+    if likelihood.n2N:
+        criterion_kwargs["n2N"] = "n2N"
+
     # determine optimizer
     optimizer = torch.optim.Adam(
         model.parameters(),
@@ -199,6 +208,7 @@ def read_poisson_gp_model_trainer(
         optimizer,
         log=True,
         mean=True,
+        n2N=True,
 ):
     """Load the model_trainer from the checkpoint file with state_dict for
     the model, likelihood, mll and optimizer."""
@@ -216,6 +226,9 @@ def read_poisson_gp_model_trainer(
     criterion_kwargs = {}
     if mean:
         criterion_kwargs["model_mean"] = "model_mean"
+
+    if n2N:
+        criterion_kwargs["n2N"] = "n2N"
 
     return GPModelTrainer(
         model=model,
@@ -262,6 +275,9 @@ def get_super_poisson_model_trainer(
     if likelihood.mean:
         criterion_kwargs["model_mean"] = "model_mean"
 
+    if likelihood.n2N:
+        criterion_kwargs["n2N"] = "n2N"
+
     # determine optimizer
     optimizer = torch.optim.Adam(
         model.parameters(),
@@ -284,6 +300,7 @@ def read_super_poisson_gp_model_trainer(
         optimizer,
         log=True,
         mean=True,
+        n2N=True,
 ):
     """Load the model_trainer from the checkpoint file with state_dict for
     the model, likelihood, mll and optimizer."""
@@ -301,6 +318,9 @@ def read_super_poisson_gp_model_trainer(
     criterion_kwargs = {"poisson_ratio": "poisson_ratio"}
     if mean:
         criterion_kwargs["model_mean"] = "model_mean"
+
+    if n2N:
+        criterion_kwargs["n2N"] = "n2N"
 
     return GPModelTrainer(
         model=model,
