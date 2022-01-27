@@ -126,7 +126,7 @@ def read_gaussian_gp_model_trainer(
     inducing_points = checkpoint_info["model"]["variational_strategy.inducing_points"]
     model = GPModel(inducing_points)
     model.load_state_dict(checkpoint_info["model"])
-    likelihood = GaussianLikelihood(log=log, mean=mean)
+    likelihood = GaussianLikelihood(log=log, mean=mean, n2N=n2N)
     likelihood.load_state_dict(checkpoint_info["likelihood"])
     mll = VariationalELBO(likelihood, model, num_data=len(dataloader.dataset))
     optimizer = optimizer(model.parameters())
@@ -217,7 +217,7 @@ def read_poisson_gp_model_trainer(
     inducing_points = checkpoint_info["model"]["variational_strategy.inducing_points"]
     model = GPModel(inducing_points)
     model.load_state_dict(checkpoint_info["model"])
-    likelihood = PoissonLikelihood(log=log, mean=mean)
+    likelihood = PoissonLikelihood(log=log, mean=mean, n2N=n2N)
     likelihood.load_state_dict(checkpoint_info["likelihood"])
     mll = VariationalELBO(likelihood, model, num_data=len(dataloader.dataset))
     optimizer = optimizer(model.parameters())
@@ -309,7 +309,7 @@ def read_super_poisson_gp_model_trainer(
     inducing_points = checkpoint_info["model"]["variational_strategy.inducing_points"]
     model = GPModel(inducing_points)
     model.load_state_dict(checkpoint_info["model"])
-    likelihood = SuperPoissonLikelihood(log=log, mean=mean)
+    likelihood = SuperPoissonLikelihood(log=log, mean=mean, n2N=n2N)
     likelihood.load_state_dict(checkpoint_info["likelihood"])
     mll = VariationalELBO(likelihood, model, num_data=len(dataloader.dataset))
     optimizer = optimizer(model.parameters())
