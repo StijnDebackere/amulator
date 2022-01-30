@@ -1,4 +1,5 @@
 from gpytorch.mlls import VariationalELBO, ExactMarginalLogLikelihood
+import gpytorch.priors as priors
 from ignite.handlers import Checkpoint
 import torch
 
@@ -118,13 +119,23 @@ def read_gaussian_gp_model_trainer(
         log=True,
         mean=True,
         n2N=True,
+        priors=["mean", "outputscale", "lengthscale"],
 ):
     """Load the model_trainer from the checkpoint file with state_dict for
     the model, likelihood, mll and optimizer."""
     checkpoint_info = torch.load(checkpoint_file)
 
     inducing_points = checkpoint_info["model"]["variational_strategy.inducing_points"]
-    model = GPModel(inducing_points)
+    model_kwargs = {}
+    if priors is not None:
+        if "mean" in priors:
+            model_kwargs["mean_prior"] = priors.SmoothedBoxPrior(0.1, 1.0)
+        if "outputscale" in priors:
+            model_kwargs["outputscale_prior"] = priors.SmoothedBoxPrior(0.1, 1.0)
+        if "lengthscale" in priors:
+            model_kwargs["lengthscale_prior"] = priors.SmoothedBoxPrior(0.1, 1.0)
+
+    model = GPModel(inducing_points, **model_kwargs)
     model.load_state_dict(checkpoint_info["model"])
     likelihood = GaussianLikelihood(log=log, mean=mean, n2N=n2N)
     likelihood.load_state_dict(checkpoint_info["likelihood"])
@@ -209,13 +220,23 @@ def read_poisson_gp_model_trainer(
         log=True,
         mean=True,
         n2N=True,
+        priors=["mean", "outputscale", "lengthscale"],
 ):
     """Load the model_trainer from the checkpoint file with state_dict for
     the model, likelihood, mll and optimizer."""
     checkpoint_info = torch.load(checkpoint_file)
 
     inducing_points = checkpoint_info["model"]["variational_strategy.inducing_points"]
-    model = GPModel(inducing_points)
+    model_kwargs = {}
+    if priors is not None:
+        if "mean" in priors:
+            model_kwargs["mean_prior"] = priors.SmoothedBoxPrior(0.1, 1.0)
+        if "outputscale" in priors:
+            model_kwargs["outputscale_prior"] = priors.SmoothedBoxPrior(0.1, 1.0)
+        if "lengthscale" in priors:
+            model_kwargs["lengthscale_prior"] = priors.SmoothedBoxPrior(0.1, 1.0)
+
+    model = GPModel(inducing_points, **model_kwargs)
     model.load_state_dict(checkpoint_info["model"])
     likelihood = PoissonLikelihood(log=log, mean=mean, n2N=n2N)
     likelihood.load_state_dict(checkpoint_info["likelihood"])
@@ -301,13 +322,23 @@ def read_super_poisson_gp_model_trainer(
         log=True,
         mean=True,
         n2N=True,
+        priors=["mean", "outputscale", "lengthscale"],
 ):
     """Load the model_trainer from the checkpoint file with state_dict for
     the model, likelihood, mll and optimizer."""
     checkpoint_info = torch.load(checkpoint_file)
 
     inducing_points = checkpoint_info["model"]["variational_strategy.inducing_points"]
-    model = GPModel(inducing_points)
+    model_kwargs = {}
+    if priors is not None:
+        if "mean" in priors:
+            model_kwargs["mean_prior"] = priors.SmoothedBoxPrior(0.1, 1.0)
+        if "outputscale" in priors:
+            model_kwargs["outputscale_prior"] = priors.SmoothedBoxPrior(0.1, 1.0)
+        if "lengthscale" in priors:
+            model_kwargs["lengthscale_prior"] = priors.SmoothedBoxPrior(0.1, 1.0)
+
+    model = GPModel(inducing_points, **model_kwargs)
     model.load_state_dict(checkpoint_info["model"])
     likelihood = SuperPoissonLikelihood(log=log, mean=mean, n2N=n2N)
     likelihood.load_state_dict(checkpoint_info["likelihood"])
