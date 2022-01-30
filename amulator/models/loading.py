@@ -119,7 +119,11 @@ def read_gaussian_gp_model_trainer(
         log=True,
         mean=True,
         n2N=True,
-        prior=["mean", "outputscale", "lengthscale"],
+        prior={
+            "mean": {"dim": 1, "min": -1.0, "max": 1.0},
+            "outputscale": {"dim": 1, "min": 0.1, "max": 1.0},
+            "lengthscale": {"dim": 9, "min": 0.1, "max": 1.0},
+        }
 ):
     """Load the model_trainer from the checkpoint file with state_dict for
     the model, likelihood, mll and optimizer."""
@@ -129,11 +133,20 @@ def read_gaussian_gp_model_trainer(
     model_kwargs = {}
     if prior is not None:
         if "mean" in prior:
-            model_kwargs["mean_prior"] = priors.SmoothedBoxPrior(0.1, 1.0)
+            model_kwargs["mean_prior"] = priors.SmoothedBoxPrior(
+                torch.tensor([prior["mean"]["min"]] * prior["mean"]["dim"]),
+                torch.tensor([prior["mean"]["max"]] * prior["mean"]["dim"]),
+            )
         if "outputscale" in prior:
-            model_kwargs["outputscale_prior"] = priors.SmoothedBoxPrior(0.1, 1.0)
+            model_kwargs["outputscale_prior"] = priors.SmoothedBoxPrior(
+                torch.tensor([prior["outputscale"]["min"]] * prior["outputscale"]["dim"]),
+                torch.tensor([prior["outputscale"]["max"]] * prior["outputscale"]["dim"]),
+            )
         if "lengthscale" in prior:
-            model_kwargs["lengthscale_prior"] = priors.SmoothedBoxPrior(0.1, 1.0)
+            model_kwargs["lengthscale_prior"] = priors.SmoothedBoxPrior(
+                torch.tensor([prior["lengthscale"]["min"]] * prior["lengthscale"]["dim"]),
+                torch.tensor([prior["lengthscale"]["max"]] * prior["lengthscale"]["dim"]),
+            )
 
     model = GPModel(inducing_points, **model_kwargs)
     model.load_state_dict(checkpoint_info["model"])
@@ -220,7 +233,11 @@ def read_poisson_gp_model_trainer(
         log=True,
         mean=True,
         n2N=True,
-        prior=["mean", "outputscale", "lengthscale"],
+        prior={
+            "mean": {"dim": 1, "min": -1.0, "max": 1.0},
+            "outputscale": {"dim": 1, "min": 0.1, "max": 1.0},
+            "lengthscale": {"dim": 9, "min": 0.1, "max": 1.0},
+        }
 ):
     """Load the model_trainer from the checkpoint file with state_dict for
     the model, likelihood, mll and optimizer."""
@@ -230,11 +247,20 @@ def read_poisson_gp_model_trainer(
     model_kwargs = {}
     if prior is not None:
         if "mean" in prior:
-            model_kwargs["mean_prior"] = priors.SmoothedBoxPrior(0.1, 1.0)
+            model_kwargs["mean_prior"] = priors.SmoothedBoxPrior(
+                torch.tensor([prior["mean"]["min"]] * prior["mean"]["dim"]),
+                torch.tensor([prior["mean"]["max"]] * prior["mean"]["dim"]),
+            )
         if "outputscale" in prior:
-            model_kwargs["outputscale_prior"] = priors.SmoothedBoxPrior(0.1, 1.0)
+            model_kwargs["outputscale_prior"] = priors.SmoothedBoxPrior(
+                torch.tensor([prior["outputscale"]["min"]] * prior["outputscale"]["dim"]),
+                torch.tensor([prior["outputscale"]["max"]] * prior["outputscale"]["dim"]),
+            )
         if "lengthscale" in prior:
-            model_kwargs["lengthscale_prior"] = priors.SmoothedBoxPrior(0.1, 1.0)
+            model_kwargs["lengthscale_prior"] = priors.SmoothedBoxPrior(
+                torch.tensor([prior["lengthscale"]["min"]] * prior["lengthscale"]["dim"]),
+                torch.tensor([prior["lengthscale"]["max"]] * prior["lengthscale"]["dim"]),
+            )
 
     model = GPModel(inducing_points, **model_kwargs)
     model.load_state_dict(checkpoint_info["model"])
@@ -322,7 +348,11 @@ def read_super_poisson_gp_model_trainer(
         log=True,
         mean=True,
         n2N=True,
-        prior=["mean", "outputscale", "lengthscale"],
+        prior={
+            "mean": {"dim": 1, "min": -1.0, "max": 1.0},
+            "outputscale": {"dim": 1, "min": 0.1, "max": 1.0},
+            "lengthscale": {"dim": 9, "min": 0.1, "max": 1.0},
+        }
 ):
     """Load the model_trainer from the checkpoint file with state_dict for
     the model, likelihood, mll and optimizer."""
@@ -332,11 +362,20 @@ def read_super_poisson_gp_model_trainer(
     model_kwargs = {}
     if prior is not None:
         if "mean" in prior:
-            model_kwargs["mean_prior"] = priors.SmoothedBoxPrior(0.1, 1.0)
+            model_kwargs["mean_prior"] = priors.SmoothedBoxPrior(
+                torch.tensor([prior["mean"]["min"]] * prior["mean"]["dim"]),
+                torch.tensor([prior["mean"]["max"]] * prior["mean"]["dim"]),
+            )
         if "outputscale" in prior:
-            model_kwargs["outputscale_prior"] = priors.SmoothedBoxPrior(0.1, 1.0)
+            model_kwargs["outputscale_prior"] = priors.SmoothedBoxPrior(
+                torch.tensor([prior["outputscale"]["min"]] * prior["outputscale"]["dim"]),
+                torch.tensor([prior["outputscale"]["max"]] * prior["outputscale"]["dim"]),
+            )
         if "lengthscale" in prior:
-            model_kwargs["lengthscale_prior"] = priors.SmoothedBoxPrior(0.1, 1.0)
+            model_kwargs["lengthscale_prior"] = priors.SmoothedBoxPrior(
+                torch.tensor([prior["lengthscale"]["min"]] * prior["lengthscale"]["dim"]),
+                torch.tensor([prior["lengthscale"]["max"]] * prior["lengthscale"]["dim"]),
+            )
 
     model = GPModel(inducing_points, **model_kwargs)
     model.load_state_dict(checkpoint_info["model"])
