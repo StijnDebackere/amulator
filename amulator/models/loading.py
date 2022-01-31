@@ -132,20 +132,20 @@ def read_gaussian_gp_model_trainer(
     inducing_points = checkpoint_info["model"]["variational_strategy.inducing_points"]
     model_kwargs = {}
     if prior is not None:
-        if "mean" in prior:
+        if "mean_prior" in prior:
             model_kwargs["mean_prior"] = priors.SmoothedBoxPrior(
-                torch.tensor([prior["mean"]["min"]] * prior["mean"]["dim"]),
-                torch.tensor([prior["mean"]["max"]] * prior["mean"]["dim"]),
+                torch.tensor([prior["mean_prior"]["min"]] * prior["mean_prior"]["dim"]),
+                torch.tensor([prior["mean_prior"]["max"]] * prior["mean_prior"]["dim"]),
             )
-        if "outputscale" in prior:
+        if "outputscale_prior" in prior:
             model_kwargs["outputscale_prior"] = priors.SmoothedBoxPrior(
-                torch.tensor([prior["outputscale"]["min"]] * prior["outputscale"]["dim"]),
-                torch.tensor([prior["outputscale"]["max"]] * prior["outputscale"]["dim"]),
+                torch.tensor([prior["outputscale_prior"]["min"]] * prior["outputscale_prior"]["dim"]),
+                torch.tensor([prior["outputscale_prior"]["max"]] * prior["outputscale_prior"]["dim"]),
             )
-        if "lengthscale" in prior:
+        if "lengthscale_prior" in prior:
             model_kwargs["lengthscale_prior"] = priors.SmoothedBoxPrior(
-                torch.tensor([prior["lengthscale"]["min"]] * prior["lengthscale"]["dim"]),
-                torch.tensor([prior["lengthscale"]["max"]] * prior["lengthscale"]["dim"]),
+                torch.tensor([prior["lengthscale_prior"]["min"]] * prior["lengthscale_prior"]["dim"]),
+                torch.tensor([prior["lengthscale_prior"]["max"]] * prior["lengthscale_prior"]["dim"]),
             )
 
     model = GPModel(inducing_points, **model_kwargs)
@@ -246,20 +246,20 @@ def read_poisson_gp_model_trainer(
     inducing_points = checkpoint_info["model"]["variational_strategy.inducing_points"]
     model_kwargs = {}
     if prior is not None:
-        if "mean" in prior:
+        if "mean_prior" in prior:
             model_kwargs["mean_prior"] = priors.SmoothedBoxPrior(
-                torch.tensor([prior["mean"]["min"]] * prior["mean"]["dim"]),
-                torch.tensor([prior["mean"]["max"]] * prior["mean"]["dim"]),
+                torch.tensor([prior["mean_prior"]["min"]] * prior["mean_prior"]["dim"]),
+                torch.tensor([prior["mean_prior"]["max"]] * prior["mean_prior"]["dim"]),
             )
-        if "outputscale" in prior:
+        if "outputscale_prior" in prior:
             model_kwargs["outputscale_prior"] = priors.SmoothedBoxPrior(
-                torch.tensor([prior["outputscale"]["min"]] * prior["outputscale"]["dim"]),
-                torch.tensor([prior["outputscale"]["max"]] * prior["outputscale"]["dim"]),
+                torch.tensor([prior["outputscale_prior"]["min"]] * prior["outputscale_prior"]["dim"]),
+                torch.tensor([prior["outputscale_prior"]["max"]] * prior["outputscale_prior"]["dim"]),
             )
-        if "lengthscale" in prior:
+        if "lengthscale_prior" in prior:
             model_kwargs["lengthscale_prior"] = priors.SmoothedBoxPrior(
-                torch.tensor([prior["lengthscale"]["min"]] * prior["lengthscale"]["dim"]),
-                torch.tensor([prior["lengthscale"]["max"]] * prior["lengthscale"]["dim"]),
+                torch.tensor([prior["lengthscale_prior"]["min"]] * prior["lengthscale_prior"]["dim"]),
+                torch.tensor([prior["lengthscale_prior"]["max"]] * prior["lengthscale_prior"]["dim"]),
             )
 
     model = GPModel(inducing_points, **model_kwargs)
@@ -361,20 +361,20 @@ def read_super_poisson_gp_model_trainer(
     inducing_points = checkpoint_info["model"]["variational_strategy.inducing_points"]
     model_kwargs = {}
     if prior is not None:
-        if "mean" in prior:
+        if "mean_prior" in prior:
             model_kwargs["mean_prior"] = priors.SmoothedBoxPrior(
-                torch.tensor([prior["mean"]["min"]] * prior["mean"]["dim"]),
-                torch.tensor([prior["mean"]["max"]] * prior["mean"]["dim"]),
+                torch.tensor([prior["mean_prior"]["min"]] * prior["mean_prior"]["dim"]),
+                torch.tensor([prior["mean_prior"]["max"]] * prior["mean_prior"]["dim"]),
             )
-        if "outputscale" in prior:
+        if "outputscale_prior" in prior:
             model_kwargs["outputscale_prior"] = priors.SmoothedBoxPrior(
-                torch.tensor([prior["outputscale"]["min"]] * prior["outputscale"]["dim"]),
-                torch.tensor([prior["outputscale"]["max"]] * prior["outputscale"]["dim"]),
+                torch.tensor([prior["outputscale_prior"]["min"]] * prior["outputscale_prior"]["dim"]),
+                torch.tensor([prior["outputscale_prior"]["max"]] * prior["outputscale_prior"]["dim"]),
             )
-        if "lengthscale" in prior:
+        if "lengthscale_prior" in prior:
             model_kwargs["lengthscale_prior"] = priors.SmoothedBoxPrior(
-                torch.tensor([prior["lengthscale"]["min"]] * prior["lengthscale"]["dim"]),
-                torch.tensor([prior["lengthscale"]["max"]] * prior["lengthscale"]["dim"]),
+                torch.tensor([prior["lengthscale_prior"]["min"]] * prior["lengthscale_prior"]["dim"]),
+                torch.tensor([prior["lengthscale_prior"]["max"]] * prior["lengthscale_prior"]["dim"]),
             )
 
     model = GPModel(inducing_points, **model_kwargs)
