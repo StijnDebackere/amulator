@@ -116,6 +116,7 @@ def read_gaussian_gp_model_trainer(
         checkpoint_file,
         dataloader,
         optimizer,
+        learn_inducing_locations=True,
         log=True,
         mean=True,
         n2N=True,
@@ -148,7 +149,7 @@ def read_gaussian_gp_model_trainer(
                 torch.tensor([prior["lengthscale_prior"]["max"]] * prior["lengthscale_prior"]["dim"]),
             )
 
-    model = GPModel(inducing_points, **model_kwargs)
+    model = GPModel(inducing_points, learn_inducing_locations=learn_inducing_locations, **model_kwargs)
     model.load_state_dict(checkpoint_info["model"])
     likelihood = GaussianLikelihood(log=log, mean=mean, n2N=n2N)
     likelihood.load_state_dict(checkpoint_info["likelihood"])
