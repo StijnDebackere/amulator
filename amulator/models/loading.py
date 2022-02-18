@@ -233,6 +233,7 @@ def read_poisson_gp_model_trainer(
         log=True,
         mean=True,
         n2N=True,
+        learn_inducing_locations=True,
         prior={
             "mean": {"dim": 1, "min": -1.0, "max": 1.0},
             "outputscale": {"dim": 1, "min": 0.1, "max": 1.0},
@@ -262,7 +263,7 @@ def read_poisson_gp_model_trainer(
                 torch.tensor([prior["lengthscale_prior"]["max"]] * prior["lengthscale_prior"]["dim"]),
             )
 
-    model = GPModel(inducing_points, **model_kwargs)
+    model = GPModel(inducing_points, learn_inducing_locations=learn_inducing_locations, **model_kwargs)
     model.load_state_dict(checkpoint_info["model"])
     likelihood = PoissonLikelihood(log=log, mean=mean, n2N=n2N)
     likelihood.load_state_dict(checkpoint_info["likelihood"])
@@ -345,6 +346,7 @@ def read_super_poisson_gp_model_trainer(
         checkpoint_file,
         dataloader,
         optimizer,
+        learn_inducing_locations=True,
         log=True,
         mean=True,
         n2N=True,
@@ -377,7 +379,7 @@ def read_super_poisson_gp_model_trainer(
                 torch.tensor([prior["lengthscale_prior"]["max"]] * prior["lengthscale_prior"]["dim"]),
             )
 
-    model = GPModel(inducing_points, **model_kwargs)
+    model = GPModel(inducing_points, learn_inducing_locations=learn_inducing_locations, **model_kwargs)
     model.load_state_dict(checkpoint_info["model"])
     likelihood = SuperPoissonLikelihood(log=log, mean=mean, n2N=n2N)
     likelihood.load_state_dict(checkpoint_info["likelihood"])
