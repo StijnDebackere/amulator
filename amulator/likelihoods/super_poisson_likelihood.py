@@ -13,7 +13,7 @@ class SuperPoissonLikelihood(_OneDimensionalLikelihood):
 
     :param bool n2N: model predicts number density :math:`n = N / n2N` instead of :math:`N`
     :param bool log: model predicts log :math:`\log N`
-    :param bool ratio: model predicts ratio to mean :math:`N / \langle N \rangle`
+    :param bool mean: model predicts ratio to mean :math:`N / \langle N \rangle`
     """
     def __init__(self, n2N=False, log=True, mean=True, likelihood_kwargs=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
