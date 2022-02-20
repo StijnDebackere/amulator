@@ -13,10 +13,14 @@ class DictionaryDataset(Dataset):
     def __getitem__(self, index):
         X = self.X[index]
         y = self.y[index]
-        extra = {
-            kw: val[index] for kw, val in self.extra.items()
-            if val.shape[0] == self.X.shape[0]
-        }
+
+        extra = {}
+        for kw, val in self.extra.items():
+            if val.shape[0] == self.X.shape[0]:
+                extra[kw] = val[index]
+            elif val.shape[0] == 1:
+                extra[kw] = val
+
         return {'X': X, 'y': y, **extra}
 
     def __len__(self):
