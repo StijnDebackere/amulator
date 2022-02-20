@@ -3,7 +3,7 @@ import gpytorch.priors as priors
 from ignite.handlers import Checkpoint
 import torch
 
-from amulator.likelihoods import PoissonLikelihood, SuperPoissonLikelihood, GaussianLikelihood
+from amulator.likelihoods import PoissonLikelihoodMeanStd, SuperPoissonLikelihoodMeanStd, GaussianLikelihoodMeanStd
 from amulator.models import GPModel, ExactGPModel
 from amulator.training.trainer import GPModelTrainer
 
@@ -369,8 +369,8 @@ GET_MODEL = {
     "super_poisson": GPModel,
 }
 GET_LIKELIHOOD = {
-    "poisson": PoissonLikelihood,
-    "gaussian": GaussianLikelihood,
+    "poisson": PoissonLikelihoodMeanStd,
+    "gaussian": GaussianLikelihoodMeanStd,
     "super_poisson": SuperPoissonLikelihoodMeanStd,
 }
 GET_TRAINER_FROM_DATALOADER = {

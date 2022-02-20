@@ -50,7 +50,7 @@ class GaussianLikelihoodBase(_OneDimensionalLikelihood):
         return log_prob
 
 
-class GaussianLikelihood(GaussianLikelihoodBase):
+class GaussianLikelihoodMeanStd(GaussianLikelihoodBase):
     r"""A Normal likelihood/noise model for GP regression for data
     :math:`N` with noise.
 
