@@ -6,47 +6,29 @@ from gpytorch.likelihoods.likelihood import _OneDimensionalLikelihood
 import torch
 
 
-class GaussianLikelihood(_OneDimensionalLikelihood):
-    r"""A Normal likelihood/noise model for GP regression for data
-    :math:`N` with noise.
-
-    :param bool log: model predicts log counts :math:`\log N`
-    :param bool ratio: model predicts ratio to mean :math:`N / \maths N \rangle`
-
+class GaussianLikelihoodBase(_OneDimensionalLikelihood):
+    r"""A Normal likelihood/noise model for GP regression for data with noise.
     """
-    def __init__(self, log=True, mean=True, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.log = log
-        self.mean = mean
 
-    def _get_kwargs(self, model_samples, **kwargs):
-        if "noise" not in kwargs:
-            raise ValueError("'noise' should be in kwargs")
+    def _get_kwargs(self, model_samples, *args, **kwargs):
+        noise = kwargs.get("noise", None)
+        if noise is None:
+            raise ValueError("noise should be in kwargs")
 
-        noise = kwargs["noise"]
-        if self.log:
-            model_samples = model_samples.exp()
+        obs = self.transform_model(model_samples, *args, **kwargs)
 
-        if self.mean:
-            if "model_mean" not in kwargs:
-                raise ValueError("model_mean needs to be specified if {self.mean=}")
-
-            else:
-                model_mean = kwargs["model_mean"]
-                if self.log:
-                    model_mean = model_mean.exp()
-
-                if torch.any(model_mean == 0.):
-                    warnings.warn("model_mean contains 0.")
-
-            model_samples = model_samples * model_mean
-
-        loc = model_samples
+        loc = obs
         scale = noise.clamp(1e-2).sqrt()
         return {
             "loc": loc,
             "scale": scale,
         }
+
+    def transform_model(self, model_samples, *args, **kwargs):
+        """Convert the latent model_samples to the observations to compute the likelihood."""
+        raise NotImplementedError
 
     def forward(self, model_samples, **kwargs):
         normal_kwargs = self._get_kwargs(model_samples, **kwargs)
@@ -66,3 +48,30 @@ class GaussianLikelihood(_OneDimensionalLikelihood):
         ).log_prob(observations.to(torch.int))
         log_prob = self.quadrature(prob_lambda, model_dist)
         return log_prob
+
+
+class GaussianLikelihood(GaussianLikelihoodBase):
+    r"""A Normal likelihood/noise model for GP regression for data
+    :math:`N` with noise.
+
+    :param bool log: model predicts log counts :math:`\log N`
+    :param bool ratio: model predicts ratio to mean :math:`N / \maths N \rangle`
+
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def transform_model(model_samples, *args, **kwargs):
+        """Convert the latent model_samples to the observations to compute the likelihood."""
+        model_mean = kwargs.get("model_mean", None)
+        model_sigma = kwargs.get("model_sigma", None)
+        if model_mean is None or model_sigma is None:
+            raise ValueError("model_mean and model_sigma should be in **kwargs")
+
+        model_to_obs = kwargs.get("model_to_obs", None)
+        if model_to_obs is None:
+            raise ValueError("model_to_obs should be in **kwargs")
+
+        # N = n * n2N, f = (n - mean_n) / sigma_n
+        obs = (model_samples * model_sigma + model_mean) * model_to_obs
+        return obs

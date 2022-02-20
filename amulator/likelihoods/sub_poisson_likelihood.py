@@ -1,13 +1,66 @@
-import warnings
-
 from gpytorch.distributions import base_distributions
 from gpytorch.likelihoods.likelihood import _OneDimensionalLikelihood
 import torch
 
 
-class SuperPoissonLikelihoodBase(_OneDimensionalLikelihood):
+class SubPoissonLikelihood(_OneDimensionalLikelihood):
+    r"""A Binomial likelihood/noise model for GP regression for
+    Poisson-like data with possible sub-Poisson errors.
+    """
+    def __init__(self, likelihood_kwargs=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.likelihood_kwargs = {} if likelihood_kwargs is None else likelihood_kwargs
+
+    def _get_kwargs(self, model_samples, *args, **kwargs):
+        poisson_ratio = kwargs.get("poisson_ratio", None)
+
+        if poisson_ratio is None:
+            raise ValueError("poisson_ratio should be in **kwargs")
+
+        if (poisson_ratio < 1.).any():
+            raise ValueError("poisson_ratio should be > 1 for SuperPoissonLikelihood")
+
+        model_obs = self.transform_model(model_samples, *args, **kwargs)
+
+        # poisson noise is set by function_samples
+        # ensure noise always > function_samples
+        noise = model_obs * (poisson_ratio + 1e-2)
+
+        n = model_obs ** 2 / (noise - model_obs)
+        probs = model_obs / (r + model_obs)
+
+        return {
+            "total_count": n,
+            "probs": probs,
+        }
+
+    def transform_model(self, model_samples, *args, **kwargs):
+        """Convert the latent model_samples to the observations to compute the likelihood."""
+        raise NotImplementedError
+
+    def forward(self, model_ratio_samples, **kwargs):
+        binom_kwargs = self._get_kwargs(model_ratio_samples, **kwargs)
+        return base_distributions.Binomial(**binom_kwargs)
+
+    def log_marginal(self, observations, model_ratio_dist, *args, **kwargs):
+        marginal = self.marginal(model_ratio_dist, *args, **kwargs)
+        return marginal.log_prob(observations.to(torch.int))
+
+    def marginal(self, model_ratio_dist, **kwargs):
+        binom_kwargs = self._get_kwargs(model_ratio_dist.mean, **kwargs)
+        return base_distributions.Binomial(**binom_kwargs)
+
+    def expected_log_prob(self, observations, model_ratio_dist, *args, **kwargs):
+        prob_lambda = lambda model_ratio_samples: self.forward(
+            model_ratio_samples, *args, **kwargs
+        ).log_prob(observations.to(torch.int))
+        log_prob = self.quadrature(prob_lambda, model_ratio_dist)
+        return log_prob
+
+
+class SubPoissonLikelihoodBase(_OneDimensionalLikelihood):
     r"""A NegativeBinomial likelihood/noise model for GP regression for
-    Poisson-like data :math:`N` with possible super-Poisson errors
+    Poisson-like data :math:`N` with possible Sub-Poisson errors
     with variance :math:`\alpha N`, where :math:`\alpha > 1` is the
     poisson_ratio.
 
@@ -16,7 +69,7 @@ class SuperPoissonLikelihoodBase(_OneDimensionalLikelihood):
     :param bool mean: model predicts ratio to mean :math:`N / \langle N \rangle`
     """
     def __init__(self, likelihood_kwargs=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        Sub().__init__(*args, **kwargs)
         self.likelihood_kwargs = {} if likelihood_kwargs is None else likelihood_kwargs
 
     def _get_kwargs(model_samples, *args, **kwargs):
@@ -26,7 +79,7 @@ class SuperPoissonLikelihoodBase(_OneDimensionalLikelihood):
             raise ValueError("poisson_ratio should be in **kwargs")
 
         if (poisson_ratio < 1.).any():
-            raise ValueError("poisson_ratio should be > 1 for SuperPoissonLikelihood")
+            raise ValueError("poisson_ratio should be > 1 for SubPoissonLikelihood")
 
         # ensure poisson_ratio > 1 to avoid divergences in r & probs
         alpha = poisson_ratio + 1e-6
@@ -67,15 +120,9 @@ class SuperPoissonLikelihoodBase(_OneDimensionalLikelihood):
         return log_prob
 
 
-class SuperPoissonLikelihoodMeanStd(SuperPoissonLikelihoodBase):
-    r"""A NegativeBinomial likelihood/noise model for GP regression for
-    Poisson-like data :math:`N` with possible super-Poisson errors
-    with variance :math:`\alpha N`, where :math:`\alpha > 1` is the
-    poisson_ratio.
-
-    :param bool n2N: model predicts number density :math:`n = N / n2N` instead of :math:`N`
-    :param bool log: model predicts log :math:`\log N`
-    :param bool mean: model predicts ratio to mean :math:`N / \langle N \rangle`
+class SubPoissonLikelihoodMeanStd(SubPoissonLikelihoodBase):
+    r"""A Binomial likelihood/noise model for GP regression for
+    Poisson-like data with possible sub-Poisson errors.
     """
     def __init__(self, likelihood_kwargs=None, *args, **kwargs):
         super().__init__(likelihood_kwargs=likelihood_kwargs, *args, **kwargs)
