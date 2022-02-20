@@ -92,7 +92,7 @@ def get_gaussian_model_trainer(
         learn_inducing_locations=learn_inducing_locations,
         **model_kwargs,
     )
-    likelihood = GaussianLikelihood(**likelihood_kwargs)
+    likelihood = GaussianLikelihoodMeanStd(**likelihood_kwargs)
     mll = VariationalELBO(likelihood, model, num_data=len(dataloader.dataset))
 
     # determine optimizer
@@ -144,7 +144,7 @@ def read_gaussian_gp_model_trainer(
 
     model = GPModel(inducing_points, learn_inducing_locations=learn_inducing_locations, **model_kwargs)
     model.load_state_dict(checkpoint_info["model"])
-    likelihood = GaussianLikelihood(log=log, mean=mean, n2N=n2N)
+    likelihood = GaussianLikelihoodMeanStd()
     likelihood.load_state_dict(checkpoint_info["likelihood"])
     mll = VariationalELBO(likelihood, model, num_data=len(dataloader.dataset))
     optimizer = optimizer(model.parameters())
@@ -190,7 +190,7 @@ def get_poisson_model_trainer(
         learn_inducing_locations=learn_inducing_locations,
         **model_kwargs,
     )
-    likelihood = PoissonLikelihood(**likelihood_kwargs)
+    likelihood = PoissonLikelihoodMeanStd(**likelihood_kwargs)
     mll = VariationalELBO(likelihood, model, num_data=len(dataloader.dataset))
 
     # determine optimizer
@@ -246,7 +246,7 @@ def read_poisson_gp_model_trainer(
 
     model = GPModel(inducing_points, learn_inducing_locations=learn_inducing_locations, **model_kwargs)
     model.load_state_dict(checkpoint_info["model"])
-    likelihood = PoissonLikelihood(log=log, mean=mean, n2N=n2N)
+    likelihood = PoissonLikelihoodMeanStd()
     likelihood.load_state_dict(checkpoint_info["likelihood"])
     mll = VariationalELBO(likelihood, model, num_data=len(dataloader.dataset))
     optimizer = optimizer(model.parameters())
@@ -292,7 +292,7 @@ def get_super_poisson_model_trainer(
         learn_inducing_locations=learn_inducing_locations,
         **model_kwargs,
     )
-    likelihood = SuperPoissonLikelihood(**likelihood_kwargs)
+    likelihood = SuperPoissonLikelihoodMeanStd(**likelihood_kwargs)
     mll = VariationalELBO(likelihood, model, num_data=len(dataloader.dataset))
 
     # determine optimizer
@@ -348,7 +348,7 @@ def read_super_poisson_gp_model_trainer(
 
     model = GPModel(inducing_points, learn_inducing_locations=learn_inducing_locations, **model_kwargs)
     model.load_state_dict(checkpoint_info["model"])
-    likelihood = SuperPoissonLikelihood(log=log, mean=mean, n2N=n2N)
+    likelihood = SuperPoissonLikelihoodMeanStd()
     likelihood.load_state_dict(checkpoint_info["likelihood"])
     mll = VariationalELBO(likelihood, model, num_data=len(dataloader.dataset))
     optimizer = optimizer(model.parameters())
