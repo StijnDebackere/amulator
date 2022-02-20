@@ -1,3 +1,3 @@
-from .gaussian_likelihood import GaussianLikelihood
-from .poisson_likelihood import PoissonLikelihood
-from .super_poisson_likelihood import SuperPoissonLikelihood
+from .gaussian_likelihood import GaussianLikelihoodMeanStd
+from .poisson_likelihood import PoissonLikelihoodMeanStd
+from .super_poisson_likelihood import SuperPoissonLikelihoodMeanStd
