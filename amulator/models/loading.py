@@ -69,6 +69,7 @@ def get_gaussian_model_trainer(
         model_kwargs=None,
         likelihood_kwargs=None,
         optimizer_kwargs=None,
+        criterion_kwargs=None,
 ):
     model_kwargs = {} if model_kwargs is None else model_kwargs
     likelihood_kwargs = {} if likelihood_kwargs is None else likelihood_kwargs
@@ -93,12 +94,6 @@ def get_gaussian_model_trainer(
     )
     likelihood = GaussianLikelihood(**likelihood_kwargs)
     mll = VariationalELBO(likelihood, model, num_data=len(dataloader.dataset))
-    criterion_kwargs = {"noise": "yvar"}
-    if likelihood.mean:
-        criterion_kwargs["model_mean"] = "model_mean"
-
-    if likelihood.n2N:
-        criterion_kwargs["n2N"] = "n2N"
 
     # determine optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, **optimizer_kwargs)
@@ -117,9 +112,7 @@ def read_gaussian_gp_model_trainer(
         dataloader,
         optimizer,
         learn_inducing_locations=True,
-        log=True,
-        mean=True,
-        n2N=True,
+        criterion_kwargs=None,
         prior={
             "mean": {"dim": 1, "min": -1.0, "max": 1.0},
             "outputscale": {"dim": 1, "min": 0.1, "max": 1.0},
@@ -157,12 +150,6 @@ def read_gaussian_gp_model_trainer(
     optimizer = optimizer(model.parameters())
     optimizer.load_state_dict(checkpoint_info["optimizer"])
 
-    criterion_kwargs = {"noise": "yvar"}
-    if mean:
-        criterion_kwargs["model_mean"] = "model_mean"
-    if n2N:
-        criterion_kwargs["n2N"] = "n2N"
-
     return GPModelTrainer(
         model=model,
         likelihood=likelihood,
@@ -180,6 +167,7 @@ def get_poisson_model_trainer(
         model_kwargs=None,
         likelihood_kwargs=None,
         optimizer_kwargs=None,
+        criterion_kwargs=None,
 ):
     model_kwargs = {} if model_kwargs is None else model_kwargs
     likelihood_kwargs = {} if likelihood_kwargs is None else likelihood_kwargs
@@ -204,12 +192,6 @@ def get_poisson_model_trainer(
     )
     likelihood = PoissonLikelihood(**likelihood_kwargs)
     mll = VariationalELBO(likelihood, model, num_data=len(dataloader.dataset))
-    criterion_kwargs = {}
-    if likelihood.mean:
-        criterion_kwargs["model_mean"] = "model_mean"
-
-    if likelihood.n2N:
-        criterion_kwargs["n2N"] = "n2N"
 
     # determine optimizer
     optimizer = torch.optim.Adam(
@@ -231,9 +213,7 @@ def read_poisson_gp_model_trainer(
         checkpoint_file,
         dataloader,
         optimizer,
-        log=True,
-        mean=True,
-        n2N=True,
+        criterion_kwargs=None,
         learn_inducing_locations=True,
         prior={
             "mean": {"dim": 1, "min": -1.0, "max": 1.0},
@@ -272,13 +252,6 @@ def read_poisson_gp_model_trainer(
     optimizer = optimizer(model.parameters())
     optimizer.load_state_dict(checkpoint_info["optimizer"])
 
-    criterion_kwargs = {}
-    if mean:
-        criterion_kwargs["model_mean"] = "model_mean"
-
-    if n2N:
-        criterion_kwargs["n2N"] = "n2N"
-
     return GPModelTrainer(
         model=model,
         likelihood=likelihood,
@@ -296,6 +269,7 @@ def get_super_poisson_model_trainer(
         model_kwargs=None,
         likelihood_kwargs=None,
         optimizer_kwargs=None,
+        criterion_kwargs=None,
 ):
     model_kwargs = {} if model_kwargs is None else model_kwargs
     likelihood_kwargs = {} if likelihood_kwargs is None else likelihood_kwargs
@@ -320,12 +294,6 @@ def get_super_poisson_model_trainer(
     )
     likelihood = SuperPoissonLikelihood(**likelihood_kwargs)
     mll = VariationalELBO(likelihood, model, num_data=len(dataloader.dataset))
-    criterion_kwargs = {"poisson_ratio": "poisson_ratio"}
-    if likelihood.mean:
-        criterion_kwargs["model_mean"] = "model_mean"
-
-    if likelihood.n2N:
-        criterion_kwargs["n2N"] = "n2N"
 
     # determine optimizer
     optimizer = torch.optim.Adam(
@@ -348,9 +316,7 @@ def read_super_poisson_gp_model_trainer(
         dataloader,
         optimizer,
         learn_inducing_locations=True,
-        log=True,
-        mean=True,
-        n2N=True,
+        criterion_kwargs=None,
         prior={
             "mean": {"dim": 1, "min": -1.0, "max": 1.0},
             "outputscale": {"dim": 1, "min": 0.1, "max": 1.0},
@@ -388,13 +354,6 @@ def read_super_poisson_gp_model_trainer(
     optimizer = optimizer(model.parameters())
     optimizer.load_state_dict(checkpoint_info["optimizer"])
 
-    criterion_kwargs = {"poisson_ratio": "poisson_ratio"}
-    if mean:
-        criterion_kwargs["model_mean"] = "model_mean"
-
-    if n2N:
-        criterion_kwargs["n2N"] = "n2N"
-
     return GPModelTrainer(
         model=model,
         likelihood=likelihood,
@@ -412,7 +371,7 @@ GET_MODEL = {
 GET_LIKELIHOOD = {
     "poisson": PoissonLikelihood,
     "gaussian": GaussianLikelihood,
-    "super_poisson": SuperPoissonLikelihood,
+    "super_poisson": SuperPoissonLikelihoodMeanStd,
 }
 GET_TRAINER_FROM_DATALOADER = {
     "poisson": get_poisson_model_trainer,
