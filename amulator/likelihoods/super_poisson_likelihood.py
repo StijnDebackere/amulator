@@ -19,7 +19,7 @@ class SuperPoissonLikelihoodBase(_OneDimensionalLikelihood):
         super().__init__(*args, **kwargs)
         self.likelihood_kwargs = {} if likelihood_kwargs is None else likelihood_kwargs
 
-    def _get_kwargs(model_samples, *args, **kwargs):
+    def _get_kwargs(self, model_samples, *args, **kwargs):
         poisson_ratio = kwargs.get("poisson_ratio", None)
 
         if poisson_ratio is None:
