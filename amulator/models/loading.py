@@ -3,7 +3,7 @@ import gpytorch.priors as priors
 from ignite.handlers import Checkpoint
 import torch
 
-from amulator.likelihoods import PoissonLikelihoodMeanStd, SuperPoissonLikelihoodMeanStd, GaussianLikelihoodMeanStd
+from amulator.likelihoods import PoissonLikelihoodMeanStd, SuperPoissonLikelihoodMean, GaussianLikelihoodMeanStd
 from amulator.models import GPModel, ExactGPModel
 from amulator.training.trainer import GPModelTrainer
 
@@ -292,7 +292,7 @@ def get_super_poisson_model_trainer(
         learn_inducing_locations=learn_inducing_locations,
         **model_kwargs,
     )
-    likelihood = SuperPoissonLikelihoodMeanStd(**likelihood_kwargs)
+    likelihood = SuperPoissonLikelihoodMean(**likelihood_kwargs)
     mll = VariationalELBO(likelihood, model, num_data=len(dataloader.dataset))
 
     # determine optimizer
@@ -348,7 +348,7 @@ def read_super_poisson_gp_model_trainer(
 
     model = GPModel(inducing_points, learn_inducing_locations=learn_inducing_locations, **model_kwargs)
     model.load_state_dict(checkpoint_info["model"])
-    likelihood = SuperPoissonLikelihoodMeanStd()
+    likelihood = SuperPoissonLikelihoodMean()
     likelihood.load_state_dict(checkpoint_info["likelihood"])
     mll = VariationalELBO(likelihood, model, num_data=len(dataloader.dataset))
     optimizer = optimizer(model.parameters())
@@ -371,7 +371,7 @@ GET_MODEL = {
 GET_LIKELIHOOD = {
     "poisson": PoissonLikelihoodMeanStd,
     "gaussian": GaussianLikelihoodMeanStd,
-    "super_poisson": SuperPoissonLikelihoodMeanStd,
+    "super_poisson": SuperPoissonLikelihoodMean,
 }
 GET_TRAINER_FROM_DATALOADER = {
     "poisson": get_poisson_model_trainer,

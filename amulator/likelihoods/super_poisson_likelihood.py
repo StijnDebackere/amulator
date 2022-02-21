@@ -67,15 +67,15 @@ class SuperPoissonLikelihoodBase(_OneDimensionalLikelihood):
         return log_prob
 
 
-class SuperPoissonLikelihoodMeanStd(SuperPoissonLikelihoodBase):
+class SuperPoissonLikelihoodMean(SuperPoissonLikelihoodBase):
     r"""A NegativeBinomial likelihood/noise model for GP regression for
     Poisson-like data :math:`N` with possible super-Poisson errors
     with variance :math:`\alpha N`, where :math:`\alpha > 1` is the
     poisson_ratio.
 
-    :param bool n2N: model predicts number density :math:`n = N / n2N` instead of :math:`N`
-    :param bool log: model predicts log :math:`\log N`
-    :param bool mean: model predicts ratio to mean :math:`N / \langle N \rangle`
+    :param array-like model_mean: mean value of the latent function
+    :param array-like poisson_ratio: ratio of variance to counts :math:`\alpha`
+    :param array-like model_to_obs: conversion factor between latent function and :math:`N`
     """
     def __init__(self, likelihood_kwargs=None, *args, **kwargs):
         super().__init__(likelihood_kwargs=likelihood_kwargs, *args, **kwargs)
@@ -83,14 +83,13 @@ class SuperPoissonLikelihoodMeanStd(SuperPoissonLikelihoodBase):
     def transform_model(self, model_samples, *args, **kwargs):
         """Convert the latent model_samples to the observations to compute the likelihood."""
         model_mean = kwargs.get("model_mean", None)
-        model_sigma = kwargs.get("model_sigma", None)
-        if model_mean is None or model_sigma is None:
-            raise ValueError("model_mean and model_sigma should be in **kwargs")
+        if model_mean is None:
+            raise ValueError("model_mean should be in **kwargs")
 
         model_to_obs = kwargs.get("model_to_obs", None)
         if model_to_obs is None:
             raise ValueError("model_to_obs should be in **kwargs")
 
-        # N = n * n2N, f = log(n) - log(mean_n) / sigma(log(n / mean_n))
-        obs = (model_samples * model_sigma + model_mean).exp() * model_to_obs
+        # f = log(N / model_to_obs) - log(mean(N / model_to_obs))
+        obs = (model_samples + model_mean).exp() * model_to_obs
         return obs
