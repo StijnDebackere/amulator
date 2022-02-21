@@ -91,6 +91,6 @@ class SuperPoissonLikelihoodMeanStd(SuperPoissonLikelihoodBase):
         if model_to_obs is None:
             raise ValueError("model_to_obs should be in **kwargs")
 
-        # N = n * n2N, f = log(n) - log(mean_n) / sigma(log(n / mean_n))
-        obs = (model_samples * model_sigma + model_mean).exp() * model_to_obs
+        # f = log(N / model_to_obs) - log(mean(N / model_to_obs))
+        obs = (model_samples + model_mean).exp() * model_to_obs
         return obs
