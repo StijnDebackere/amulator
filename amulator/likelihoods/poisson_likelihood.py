@@ -14,8 +14,8 @@ class PoissonLikelihoodBase(_OneDimensionalLikelihood):
         self.likelihood_kwargs = {} if likelihood_kwargs is None else likelihood_kwargs
 
     def _get_kwargs(self, model_samples, **kwargs):
-        rate = self.transform_model(model_samples)
-        rate = rate.clamp(1e-2)
+        model_obs = self.transform_model(model_samples, **kwargs)
+        rate = model_obs.clamp(1e-2)
         return {
             "rate": rate,
         }
