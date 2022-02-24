@@ -50,14 +50,13 @@ class PoissonLikelihoodMeanStd(PoissonLikelihoodBase):
     def transform_model(self, model_samples, *args, **kwargs):
         """Convert the latent model_samples to the observations to compute the likelihood."""
         model_mean = kwargs.get("model_mean", None)
-        model_sigma = kwargs.get("model_sigma", None)
-        if model_mean is None or model_sigma is None:
-            raise ValueError("model_mean and model_sigma should be in **kwargs")
+        if model_mean is None:
+            raise ValueError("model_mean should be in **kwargs")
 
         model_to_obs = kwargs.get("model_to_obs", None)
         if model_to_obs is None:
             raise ValueError("model_to_obs should be in **kwargs")
 
-        # N = n * n2N, f = (n - mean_n) / sigma_n
-        obs = (model_samples * model_sigma + model_mean) * model_to_obs
+        # f = log(N / model_to_obs) - log(mean(N / model_to_obs))
+        obs = (model_samples + model_mean).exp() * model_to_obs
         return obs
