@@ -38,6 +38,7 @@ class SuperPoissonLikelihoodBase(_OneDimensionalLikelihood):
 
         # ensure small value to prevent NaN's in log_prob
         total_count[total_count == 0.] = 1e-6
+        probs[probs == 1.] = 1 - 1e-6
         return {
             "total_count": total_count,
             "probs": probs,
@@ -85,6 +86,10 @@ class SuperPoissonLikelihoodMeanStd(SuperPoissonLikelihoodBase):
         model_mean = kwargs.get("model_mean", None)
         if model_mean is None:
             raise ValueError("model_mean should be in **kwargs")
+        # model_sigma = kwargs.get("model_sigma", None)
+        # if model_sigma is None:
+        #     raise ValueError("model_sigma should be in **kwargs")
+
 
         model_to_obs = kwargs.get("model_to_obs", None)
         if model_to_obs is None:
